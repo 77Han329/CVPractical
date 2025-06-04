@@ -157,7 +157,11 @@ def main(mode, args):
     for i in pbar:
         # Sample inputs:
         z = torch.randn(n, model.in_channels, latent_size, latent_size, device=device)
-        y = torch.randint(0, args.num_classes, (n,), device=device)
+        if args.fixed_label is not None:
+            y = torch.full((n,), args.fixed_label, device=device)
+        else:
+            y = torch.randint(0, args.num_classes, (n,), device=device)
+        
         
         # Setup classifier-free guidance:
         if using_cfg:
@@ -210,16 +214,18 @@ if __name__ == "__main__":
     parser.add_argument("--vae",  type=str, choices=["ema", "mse"], default="ema")
     parser.add_argument("--sample-dir", type=str, default="samples")
     parser.add_argument("--per-proc-batch-size", type=int, default=4)
-    parser.add_argument("--num-fid-samples", type=int, default=50_000)
+    parser.add_argument("--num-fid-samples", type=int, default=100)
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
-    parser.add_argument("--cfg-scale",  type=float, default=1.0)
+    parser.add_argument("--cfg-scale",  type=float, default=1.0) # Guidance scale for classifier-free guidance {0.2, 0.4, 0.6, 0.8, 1} for SDE and ODE
     parser.add_argument("--num-sampling-steps", type=int, default=250)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--tf32", action=argparse.BooleanOptionalAction, default=True,
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a SiT checkpoint (default: auto-download a pre-trained SiT-XL/2 model).")
+    parser.add_argument("--fixed-label", type=int, default=1,
+                        help="Specify a single label to sample repeatedly (for per-label analysis)")
 
     parse_transport_args(parser)
     if mode == "ODE":
