@@ -7,6 +7,7 @@ import numpy as np
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+# https://github.com/richzhang/PerceptualSimilarity/blob/master/lpips_1dir_allpairs.py
 class LPIPSMetric:
     """
     Computes LPIPS perceptual similarity scores between images in a folder or in an .npz file.
@@ -24,8 +25,8 @@ class LPIPSMetric:
     mean_dist, std_dist = lpips.compute_from_npz("path/to/images.npz")
     print("Mean LPIPS distance (npz):", mean_dist)
     """
-    def __init__(self, use_gpu=True, net='alex'):
-        self.loss_fn = lpips.LPIPS(net=net)
+    def __init__(self, use_gpu=True, net='alex', version='0.1'):
+        self.loss_fn = lpips.LPIPS(net=net, version=version)
         if use_gpu and torch.cuda.is_available():
             self.loss_fn = self.loss_fn.to(device)
         self.use_gpu = use_gpu
