@@ -4,6 +4,10 @@ import torch
 import lpips
 from tqdm import tqdm
 import numpy as np
+import torchvision.transforms as T
+from torchvision.models import vit_b_16
+from torchvision.models.feature_extraction import create_feature_extractor
+from dreamsim import dreamsim
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -106,13 +110,6 @@ class LPIPSMetric:
             return avg_dist, std_dist
 
 
-import os
-import itertools
-import torch
-import numpy as np
-from PIL import Image
-from tqdm import tqdm
-from dreamsim import dreamsim
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -196,3 +193,44 @@ class DreamSimMetric:
             return avg_dist, std_dist, pair_scores
         else:
             return avg_dist, std_dist
+
+class DINODiversityMetric:
+    def __init__(self, use_gpu=True):
+        self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
+        self.model = vit_b_16(weights='IMAGENET1K_V1').to(self.device).eval()
+
+        self.extractor = create_feature_extractor(self.model, return_nodes={"heads": "cls"})
+
+        self.transform = T.Compose([
+            T.Resize(224),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406],
+                        std=[0.229, 0.224, 0.225]),
+        ])
+        
+    def _preprocess_np_image(self, np_img):
+        if np_img.dtype != np.uint8:
+            np_img = (np.clip(np_img, 0, 1) * 255).astype(np.uint8)
+        img = Image.fromarray(np_img)
+        return self.transform(img).unsqueeze(0).to(self.device)
+
+    def compute_from_npz(self, npz_path):
+        data = np.load(npz_path)["arr_0"]  # [N, H, W, C]
+        feats = []
+
+        for img in tqdm(data, desc="Extracting features"):
+            x = self._preprocess_np_image(img)
+            with torch.no_grad():
+                feat = self.extractor(x)["cls"].squeeze(0)  # [D]
+            feats.append(feat)
+
+        feats = torch.stack(feats)
+        feats = torch.nn.functional.normalize(feats, dim=1)
+
+        dists = []
+        for i in range(len(feats)):
+            for j in range(i+1, len(feats)):
+                dists.append(1.0 - torch.dot(feats[i], feats[j]).item())
+
+        return float(np.mean(dists)), float(np.std(dists))
