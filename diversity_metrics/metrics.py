@@ -5,9 +5,12 @@ import lpips
 from tqdm import tqdm
 import numpy as np
 import torchvision.transforms as T
-from torchvision.models import vit_b_16
+from PIL import Image
+import timm
 from torchvision.models.feature_extraction import create_feature_extractor
 from dreamsim import dreamsim
+from transformers import AutoImageProcessor, AutoModel
+import torch.nn.functional as F
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -194,12 +197,13 @@ class DreamSimMetric:
         else:
             return avg_dist, std_dist
 
+
 class DINODiversityMetric:
     def __init__(self, use_gpu=True):
         self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
-        self.model = vit_b_16(weights='IMAGENET1K_V1').to(self.device).eval()
-
-        self.extractor = create_feature_extractor(self.model, return_nodes={"heads": "cls"})
+        self.model = timm.create_model('vit_base_patch16_224_dino', pretrained=True)
+        self.model.head = torch.nn.Identity()  
+        self.model.eval().to(self.device)
 
         self.transform = T.Compose([
             T.Resize(224),
@@ -208,7 +212,7 @@ class DINODiversityMetric:
             T.Normalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]),
         ])
-        
+
     def _preprocess_np_image(self, np_img):
         if np_img.dtype != np.uint8:
             np_img = (np.clip(np_img, 0, 1) * 255).astype(np.uint8)
@@ -219,10 +223,11 @@ class DINODiversityMetric:
         data = np.load(npz_path)["arr_0"]  # [N, H, W, C]
         feats = []
 
-        for img in tqdm(data, desc="Extracting features"):
+        print("Extracting DINO features...")
+        for img in tqdm(data):
             x = self._preprocess_np_image(img)
             with torch.no_grad():
-                feat = self.extractor(x)["cls"].squeeze(0)  # [D]
+                feat = self.model(x).squeeze(0)  
             feats.append(feat)
 
         feats = torch.stack(feats)
@@ -230,7 +235,49 @@ class DINODiversityMetric:
 
         dists = []
         for i in range(len(feats)):
-            for j in range(i+1, len(feats)):
-                dists.append(1.0 - torch.dot(feats[i], feats[j]).item())
+            for j in range(i + 1, len(feats)):
+                dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine distance
+
+        return float(np.mean(dists)), float(np.std(dists))
+    
+
+
+class DINOKDDMetric:
+    def __init__(self, use_gpu=True):
+        from PIL import Image
+        import torchvision.transforms as T
+
+        self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
+        self.processor = AutoImageProcessor.from_pretrained("facebook/dinov2-base")
+        self.model = AutoModel.from_pretrained("facebook/dinov2-base").to(self.device).eval()
+
+    def _preprocess_np_image(self, np_img):
+        from PIL import Image
+        if np_img.dtype != np.uint8:
+            np_img = (np.clip(np_img, 0, 1) * 255).astype(np.uint8)
+        return Image.fromarray(np_img)
+
+    def compute_from_npz(self, npz_path):
+        import numpy as np
+        from tqdm import tqdm
+        data = np.load(npz_path)["arr_0"]
+        feats = []
+
+        print("Extracting DINOv2 features (via HuggingFace)...")
+        for img in tqdm(data):
+            pil_img = self._preprocess_np_image(img)
+            inputs = self.processor(images=pil_img, return_tensors="pt").to(self.device)
+            with torch.no_grad():
+                outputs = self.model(**inputs)
+                feat = outputs.last_hidden_state[:, 0, :]  # [CLS] token
+            feats.append(feat.squeeze(0))
+
+        feats = torch.stack(feats)
+        feats = F.normalize(feats, dim=1)
+
+        dists = []
+        for i in range(len(feats)):
+            for j in range(i + 1, len(feats)):
+                dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine
 
         return float(np.mean(dists)), float(np.std(dists))
