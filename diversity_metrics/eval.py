@@ -1,6 +1,6 @@
 import os
 import argparse
-from metrics import DreamSimMetric, LPIPSMetric,DINODiversityMetric,DINOKDDMetric
+from metrics import DreamSimMetric, LPIPSMetric,DINODiversityMetric,DINOKDDMetric,CLIPDiversityMetric
 
 def compute_diversity_metrics(npz_path, metric):
     if metric == "lpips":
@@ -11,6 +11,8 @@ def compute_diversity_metrics(npz_path, metric):
         metric_instance = DINODiversityMetric()
     elif metric == "dinokdd":
         metric_instance = DINOKDDMetric()
+    elif metric == "clip":
+        metric_instance = CLIPDiversityMetric()
     else:
         raise ValueError("Unsupported metric type. Choose 'lpips' or 'dreamsim'.")
     
@@ -40,7 +42,7 @@ def preprocess_path(number_of_samples, label, sample_method, cfg, sample_steps, 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diversity metrics")
-    parser.add_argument("--metric", type=str, choices=["lpips", "dreamsim","dino","dinokdd"], required=True, help="Choose the metric to evaluate")
+    parser.add_argument("--metric", type=str, choices=["lpips", "dreamsim","dino","dinokdd","clip"], required=True, help="Choose the metric to evaluate")
     parser.add_argument("--number-of-samples", type=int, default=100, help="Number of samples")
     parser.add_argument("--label", type=int, choices=[0, 97, 300, 389, 409, 555, 569, 571, 574, 701], default=0)
     parser.add_argument("--sample-method", type=str, default="ode", choices=["ode", "sde"])

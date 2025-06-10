@@ -11,6 +11,8 @@ from torchvision.models.feature_extraction import create_feature_extractor
 from dreamsim import dreamsim
 from transformers import AutoImageProcessor, AutoModel
 import torch.nn.functional as F
+from transformers import CLIPProcessor, CLIPModel
+
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -279,5 +281,40 @@ class DINOKDDMetric:
         for i in range(len(feats)):
             for j in range(i + 1, len(feats)):
                 dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine
+
+        return float(np.mean(dists)), float(np.std(dists))
+    
+    
+
+class CLIPDiversityMetric:
+    def __init__(self, use_gpu=True):
+        self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
+        self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(self.device).eval()
+        self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+
+    def _preprocess_np_image(self, np_img):
+        if np_img.dtype != np.uint8:
+            np_img = (np.clip(np_img, 0, 1) * 255).astype(np.uint8)
+        return Image.fromarray(np_img)
+
+    def compute_from_npz(self, npz_path):
+        data = np.load(npz_path)["arr_0"]
+        feats = []
+
+        print("Extracting CLIP features...")
+        for img in tqdm(data):
+            pil_img = self._preprocess_np_image(img)
+            inputs = self.processor(images=pil_img, return_tensors="pt").to(self.device)
+            with torch.no_grad():
+                feat = self.model.get_image_features(**inputs)
+                feat = F.normalize(feat, dim=1)
+            feats.append(feat.squeeze(0))
+
+        feats = torch.stack(feats)
+
+        dists = []
+        for i in range(len(feats)):
+            for j in range(i + 1, len(feats)):
+                dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine distance
 
         return float(np.mean(dists)), float(np.std(dists))
