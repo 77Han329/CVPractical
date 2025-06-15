@@ -161,8 +161,7 @@ def main(mode, args):
             y = torch.full((n,), args.fixed_label, device=device)
         else:
             y = torch.randint(0, args.num_classes, (n,), device=device)
-        
-        
+
         # Setup classifier-free guidance:
         if using_cfg:
             z = torch.cat([z, z], 0)
@@ -174,16 +173,29 @@ def main(mode, args):
             model_kwargs = dict(y=y)
             model_fn = model.forward
 
-        samples = sample_fn(z, model_fn, **model_kwargs)[-1]
+        if args.step_by_step:
+            samples_all_steps = sample_fn(z, model_fn, **model_kwargs)
+            for step_idx, latent in enumerate(samples_all_steps):
+                decoded = vae.decode(latent / 0.18215).sample
+                decoded = torch.clamp(127.5 * decoded + 128.0, 0, 255).permute(0, 2, 3, 1).to("cpu", dtype=torch.uint8).numpy()
+                for j, sample in enumerate(decoded):
+                    index = j * dist.get_world_size() + rank + total
+                    step_path = os.path.join(sample_folder_dir, f"step_{step_idx:03d}_{index:06d}.png")
+                    Image.fromarray(sample).save(step_path)
+            # 最终样本，用于 fid npz
+            samples = samples_all_steps[-1]
+        else:
+            samples = sample_fn(z, model_fn, **model_kwargs)[-1]
+
         if using_cfg:
             samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
 
         samples = vae.decode(samples / 0.18215).sample
         samples = torch.clamp(127.5 * samples + 128.0, 0, 255).permute(0, 2, 3, 1).to("cpu", dtype=torch.uint8).numpy()
 
-        # Save samples to disk as individual .png files
-        for i, sample in enumerate(samples):
-            index = i * dist.get_world_size() + rank + total
+        # Save final samples (for evaluation)
+        for j, sample in enumerate(samples):
+            index = j * dist.get_world_size() + rank + total
             Image.fromarray(sample).save(f"{sample_folder_dir}/{index:06d}.png")
         total += global_batch_size
         dist.barrier()
@@ -218,7 +230,7 @@ if __name__ == "__main__":
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
     parser.add_argument("--cfg-scale",  type=float, default=1.0) 
-    parser.add_argument("--num-sampling-steps", type=int, default=250)
+    parser.add_argument("--num-sampling-steps", type=int, default=1000)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--tf32", action=argparse.BooleanOptionalAction, default=True,
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
@@ -226,6 +238,7 @@ if __name__ == "__main__":
                         help="Optional path to a SiT checkpoint (default: auto-download a pre-trained SiT-XL/2 model).")
     parser.add_argument("--fixed-label", type=int, default=None,
                         help="0 97 300 389 409 555 569 571 574 701")
+    parser.add_argument("--step-by-step", action='store_true', help="Save each intermediate sampling step")
     #parser.add_argument("--guidance-start", type=float, default=0.0)
     #parser.add_argument("--guidance-end", type=float, default=1.0)  
 
