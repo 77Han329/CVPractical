@@ -1,21 +1,24 @@
+# diversity_metrics.py
+
 import os
 import itertools
 import torch
 import lpips
-from tqdm import tqdm
 import numpy as np
 import torchvision.transforms as T
 from PIL import Image
-import timm
-from torchvision.models.feature_extraction import create_feature_extractor
+from tqdm import tqdm
 from dreamsim import dreamsim
-from transformers import AutoImageProcessor, AutoModel
+from transformers import AutoImageProcessor, AutoModel, CLIPProcessor, CLIPModel
 import torch.nn.functional as F
-from transformers import CLIPProcessor, CLIPModel
+from torchvision.models.inception import inception_v3
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from scipy import linalg
+from sklearn.neighbors import NearestNeighbors
 
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+# ==================== LPIPS ====================
 class LPIPSMetric:
     """
     Computes LPIPS perceptual similarity scores between images in a folder or in an .npz file.
@@ -118,6 +121,7 @@ class LPIPSMetric:
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+# ==================== DreamSim ====================
 class DreamSimMetric:
     """
     Computes DreamSim perceptual similarity scores between images
@@ -200,51 +204,8 @@ class DreamSimMetric:
             return avg_dist, std_dist
 
 
+# ==================== DINOv2 ====================
 class DINODiversityMetric:
-    def __init__(self, use_gpu=True):
-        self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
-        self.model = timm.create_model('vit_base_patch16_224_dino', pretrained=True)
-        self.model.head = torch.nn.Identity()  
-        self.model.eval().to(self.device)
-
-        self.transform = T.Compose([
-            T.Resize(224),
-            T.CenterCrop(224),
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406],
-                        std=[0.229, 0.224, 0.225]),
-        ])
-
-    def _preprocess_np_image(self, np_img):
-        if np_img.dtype != np.uint8:
-            np_img = (np.clip(np_img, 0, 1) * 255).astype(np.uint8)
-        img = Image.fromarray(np_img)
-        return self.transform(img).unsqueeze(0).to(self.device)
-
-    def compute_from_npz(self, npz_path):
-        data = np.load(npz_path)["arr_0"]  # [N, H, W, C]
-        feats = []
-
-        print("Extracting DINO features...")
-        for img in tqdm(data):
-            x = self._preprocess_np_image(img)
-            with torch.no_grad():
-                feat = self.model(x).squeeze(0)  
-            feats.append(feat)
-
-        feats = torch.stack(feats)
-        feats = torch.nn.functional.normalize(feats, dim=1)
-
-        dists = []
-        for i in range(len(feats)):
-            for j in range(i + 1, len(feats)):
-                dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine distance
-
-        return float(np.mean(dists)), float(np.std(dists))
-    
-
-
-class DINOKDDMetric:
     def __init__(self, use_gpu=True):
         from PIL import Image
         import torchvision.transforms as T
@@ -283,9 +244,9 @@ class DINOKDDMetric:
                 dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine
 
         return float(np.mean(dists)), float(np.std(dists))
-    
-    
 
+
+# ==================== CLIP Diversity ====================
 class CLIPDiversityMetric:
     def __init__(self, use_gpu=True):
         self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
