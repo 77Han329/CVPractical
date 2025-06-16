@@ -12,6 +12,8 @@ def compute_diversity_metrics(npz_path, metric):
         metric_instance = DINODiversityMetric()
     elif metric == "clip":
         metric_instance = CLIPDiversityMetric()
+    elif metric == "vendi":
+        metric_instance = VendiDiversityMetric()
     else:
         raise ValueError("Unsupported metric type.")
     
