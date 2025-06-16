@@ -1,6 +1,6 @@
 import os
 import argparse
-from metrics import DreamSimMetric, LPIPSMetric,DINODiversityMetric,DINOKDDMetric,CLIPDiversityMetric
+from metrics import DreamSimMetric, LPIPSMetric,DINODiversityMetric,DINOKDDMetric,CLIPDiversityMetric,VendiDiversityMetric
 
 def compute_diversity_metrics(npz_path, metric):
     if metric == "lpips":
@@ -13,6 +13,8 @@ def compute_diversity_metrics(npz_path, metric):
         metric_instance = DINOKDDMetric()
     elif metric == "clip":
         metric_instance = CLIPDiversityMetric()
+    elif metric == "vendi":
+        metric_instance = VendiDiversityMetric()
     else:
         raise ValueError("Unsupported metric type. Choose 'lpips' or 'dreamsim'.")
     

@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from scipy import linalg
 from sklearn.neighbors import NearestNeighbors
+from vendi_score import image_utils
 
 
 # ==================== LPIPS ====================
@@ -279,3 +280,25 @@ class CLIPDiversityMetric:
                 dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine distance
 
         return float(np.mean(dists)), float(np.std(dists))
+    
+
+# ==================== CLIP Diversity ====================
+
+# pip install vendi_score
+class VendiDiversityMetric:
+    def __init__(self, use_gpu=True, embeddings="default"):
+        self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
+        self.embeddings = embeddings  # 'default' for pool-2048, 'inception' for Inception v3
+
+    def compute_from_npz(self, npz_path):
+        data = np.load(npz_path)["arr_0"]
+
+        print("Compute Vendi Score...")
+        if self.embeddings == "default":
+            vs = [image_utils.pixel_vendi_score([Image.fromarray(img.copy()) for img in imgs]) for imgs in data]
+        elif self.embeddings == "inception":
+            vs = [image_utils.embedding_vendi_score([Image.fromarray(img.copy()) for img in imgs], device=self.device) for imgs in data]
+        else:
+            raise ValueError("Invalid embeddings type. Use 'default' or 'inception'.")
+
+        return float(np.mean(vs).item()), float(np.std(vs).item())
