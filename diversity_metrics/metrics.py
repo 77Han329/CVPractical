@@ -165,7 +165,7 @@ class DreamSimMetric:
         image_names = [f"img_{i}" for i in range(data.shape[0])]
         return tensors, image_names
 
-    def compute(self, input_path, return_pairwise_scores=False, save_scores_path=None):
+    def compute_from_npz(self, input_path, return_pairwise_scores=False, save_scores_path=None):
         """
         Automatically detects if input_path is a folder or npz file
         and computes DreamSim diversity scores.

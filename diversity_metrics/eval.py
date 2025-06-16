@@ -1,20 +1,19 @@
 import os
 import argparse
-from metrics import DreamSimMetric, LPIPSMetric,DINODiversityMetric,DINOKDDMetric,CLIPDiversityMetric
+import csv
+from metrics import DreamSimMetric, LPIPSMetric, DINODiversityMetric, CLIPDiversityMetric
 
 def compute_diversity_metrics(npz_path, metric):
     if metric == "lpips":
         metric_instance = LPIPSMetric()
     elif metric == "dreamsim":
         metric_instance = DreamSimMetric()
-    elif metric == "dino":
+    elif metric == "dinov2":
         metric_instance = DINODiversityMetric()
-    elif metric == "dinokdd":
-        metric_instance = DINOKDDMetric()
     elif metric == "clip":
         metric_instance = CLIPDiversityMetric()
     else:
-        raise ValueError("Unsupported metric type. Choose 'lpips' or 'dreamsim'.")
+        raise ValueError("Unsupported metric type.")
     
     return metric_instance.compute_from_npz(npz_path)
 
@@ -40,20 +39,43 @@ def preprocess_path(number_of_samples, label, sample_method, cfg, sample_steps, 
     
     return npz_path
 
+def save_to_csv(csv_path, row_data, header=None):
+    file_exists = os.path.isfile(csv_path)
+    with open(csv_path, mode='a', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        if not file_exists and header:
+            writer.writeheader()
+        writer.writerow(row_data)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diversity metrics")
-    parser.add_argument("--metric", type=str, choices=["lpips", "dreamsim","dino","dinokdd","clip"], required=True, help="Choose the metric to evaluate")
-    parser.add_argument("--number-of-samples", type=int, default=100, help="Number of samples")
+    parser.add_argument("--metric", type=str, choices=["lpips", "dreamsim", "dinov2", "clip"], required=True)
+    parser.add_argument("--number-of-samples", type=int, default=100)
     parser.add_argument("--label", type=int, choices=[0, 97, 300, 389, 409, 555, 569, 571, 574, 701], default=0)
-    parser.add_argument("--sample-method", type=str, default="ode", choices=["ode", "sde"])
+    parser.add_argument("--sample-method", type=str, choices=["ode", "sde"], default="ode")
     parser.add_argument("--cfg", type=float, choices=[1.0, 3.0, 5.0], default=1.0)
     parser.add_argument("--sample-steps", type=int, choices=[50, 100, 150, 200, 250], default=250)
-    parser.add_argument("--diffusion-form", type=str, default="sigma", choices=["sigma", "increase"])
-    
-    args = parser.parse_args()
+    parser.add_argument("--diffusion-form", type=str, choices=["sigma", "increase"], default="sigma")
+    parser.add_argument("--csv-path", type=str, default="diversity_results.csv")
 
+    args = parser.parse_args()
     npz_path = preprocess_path(args.number_of_samples, args.label, args.sample_method, args.cfg, args.sample_steps, args.diffusion_form)
     mean, std = compute_diversity_metrics(npz_path, args.metric)
 
-    print(f" Mean: {mean:.4f}, Std: {std:.4f}")
-    
+    print(f"Mean: {mean:.4f}, Std: {std:.4f}")
+
+    save_to_csv(
+        args.csv_path,
+        row_data={
+            "metric": args.metric,
+            "label": args.label,
+            "cfg": args.cfg,
+            "sample_steps": args.sample_steps,
+            "sample_method": args.sample_method,
+            "diffusion_form": args.diffusion_form,
+            "num_samples": args.number_of_samples,
+            "mean": f"{mean:.4f}",
+            "std": f"{std:.4f}"
+        },
+        header=["metric", "label", "cfg", "sample_steps", "sample_method", "diffusion_form", "num_samples", "mean", "std"]
+    )
