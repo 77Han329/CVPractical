@@ -301,4 +301,10 @@ class VendiDiversityMetric:
         else:
             raise ValueError("Invalid embeddings type. Use 'default' or 'inception'.")
 
-        return float(np.mean(vs).item()), float(np.std(vs).item())
+        n = len(data)
+        mean = np.mean(vs).item()
+        mean_normalized = mean / n
+        std = np.std(vs).item()
+        std_normalized = std / n
+
+        return float(mean_normalized), float(std_normalized)
