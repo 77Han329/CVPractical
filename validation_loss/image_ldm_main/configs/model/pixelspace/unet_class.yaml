@@ -1,0 +1,25 @@
+name: UNet-class
+target: ldm.models.unet.model.EfficientUNet
+params:
+  in_channels: 3
+  model_channels: 128
+  out_channels: 3
+  num_res_blocks: 2
+  channel_mult: [1, 2, 4, 4, 8]
+  # This isn't the resolution but the down-sampling factor.
+  # For each channel multiplier we down-sample the image
+  # by a factor of 2. Hence, the down-sampling factor increases
+  # by a factor of 2 for each channel multiplier. For an image
+  # with size 64x64 and four channel multipliers, the down-sampling
+  # factors are 1, 2, 4, 8. The attention resolutions are then
+  # 64, 32, 16, 8.
+  attention_resolutions: [8, 16]
+  dropout: 0.0
+  conv_resample: True
+  dim_head: 64
+  num_heads: 4
+  use_linear_attn: False
+  use_scale_shift_norm: True
+  pool_factor: -1
+  num_classes: 10
+  class_dropout_prob: 0.1

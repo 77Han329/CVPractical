@@ -1,0 +1,41 @@
+# @package _global_
+defaults:
+  - override /data: imagenet256
+  - override /model: dit-xl-2
+  - override /autoencoder: tiny_ae
+  - override /lr_scheduler: constant
+
+name: imnet256/sit-xl-2/loc0_scale1
+
+data:
+  params:
+    batch_size: 32
+    val_batch_size: 16
+
+lr_scheduler:
+  params:
+    num_warmup_steps: 2000
+
+trainer_module:
+  params:
+    # flow matching --------------------- #
+    flow_cfg:
+      target: ldm.flow.Flow
+      params:
+        schedule: linear
+        timestep_sampler:
+          target: ldm.flow.LogitNormalSampler
+          params:
+            loc: 0.0
+            scale: 1.0
+    # ----------------------------------- #
+    lr: 1e-4
+    ema_rate: 0.9999   # SiT/REPA setting
+
+trainer_params:
+  max_steps: 400000
+  limit_val_batches: 8        # calculate number of samples for 1k FID
+  val_check_interval: 10000   # steps, regardless of gradient accumulation
+  precision: bf16-mixed
+
+# bash scripts/slurm/start_juelich.sh --time 24:00:00 --name sit-lognorm --nodes 2 --args experiment=imnet256/sit-xl_lognorm

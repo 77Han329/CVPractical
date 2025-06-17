@@ -1,0 +1,34 @@
+# @package _global_
+defaults:
+  - override /data: cifar10
+  - override /model: pixelspace/unet_class
+  - override /autoencoder: null
+  - override /lr_scheduler: constant
+
+name: pixelspace/fm
+
+data:
+  params:
+    batch_size: 128
+    val_batch_size: 128
+
+lr_scheduler:
+  params:
+    num_warmup_steps: 2000
+
+trainer_module:
+  params:
+    # diffusion config ------------------ #
+    flow_cfg:
+      target: ldm.flow.Flow
+      params:
+        schedule: linear
+        timestep_sampler: null
+    # ----------------------------------- #
+    lr: 1e-4
+    ema_rate: 0.9999
+
+trainer_params:
+  val_check_interval: 1.0    # steps, regardless of gradient accumulation
+  check_val_every_n_epoch: 10
+  precision: 32-true

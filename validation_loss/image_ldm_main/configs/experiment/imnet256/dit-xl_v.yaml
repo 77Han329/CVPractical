@@ -1,0 +1,39 @@
+# @package _global_
+defaults:
+  - override /data: imagenet256
+  - override /model: dit-xl-2
+  - override /autoencoder: tiny_ae
+  - override /lr_scheduler: constant
+
+name: imnet256/dit-xl-2/v-param
+
+data:
+  params:
+    batch_size: 32
+    val_batch_size: 16
+
+lr_scheduler:
+  params:
+    num_warmup_steps: 2000
+
+trainer_module:
+  params:
+    # diffusion config ------------------ #
+    flow_cfg:
+      target: ldm.diffusion.DiffusionFlow
+      params:
+        timesteps: 1000
+        beta_schedule: linear
+        loss_type: l2
+        parameterization: v
+    # ----------------------------------- #
+    lr: 1e-4
+    ema_rate: 0.9999
+
+trainer_params:
+  max_steps: 400000
+  limit_val_batches: 8        # calculate number of samples for 1k FID
+  val_check_interval: 10000   # steps, regardless of gradient accumulation
+  precision: bf16-mixed
+
+# bash scripts/slurm/start_juelich.sh --time 24:00:00 --name dit-v --nodes 2 --args experiment=imnet256/dit-xl_v

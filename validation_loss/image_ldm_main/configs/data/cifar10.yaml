@@ -1,0 +1,19 @@
+name: CIFAR10
+num_classes: 10
+target: ldm.dataloader.DataModuleFromConfig
+params:
+  batch_size: 128
+  val_batch_size: 128
+  num_workers: 4
+  train:
+    target: ldm.dataloader.CIFAR10
+    params:
+      root: logs/data
+      download: True
+      train: True
+  validation:
+    target: ldm.dataloader.CIFAR10
+    params:
+      root: logs/data
+      download: True
+      train: False

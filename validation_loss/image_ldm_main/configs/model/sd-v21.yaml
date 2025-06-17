@@ -1,0 +1,26 @@
+name: LDM-UNet
+target: ldm.models.stable_diffusion.openaimodel.UNetModel
+params:
+  image_size: 32
+  in_channels: 4
+  out_channels: 4
+  model_channels: 320
+  # This isn't the resolution but the down-sampling factor.
+  # For each channel multiplier we down-sample the image
+  # by a factor of 2. Hence, the down-sampling factor increases
+  # by a factor of 2 for each channel multiplier. For an image
+  # with size 64x64 and four channel multipliers, the down-sampling
+  # factors are 1, 2, 4, 8. The attention resolutions are then
+  # 64, 32, 16, 8.
+  attention_resolutions: [4, 2, 1]
+  num_res_blocks: 2
+  channel_mult: [1, 2, 4, 4]
+  num_heads: -1
+  num_head_channels: 64
+  use_spatial_transformer: True         # custom transformer support
+  use_linear_in_transformer: True
+  transformer_depth: 1                  # custom transformer support
+  context_dim: 1024                     # custom transformer support
+  legacy: False
+  # loading from checkpoint
+  load_from_ckpt: null                  # checkpoints/v2-1_768-ema-pruned.ckpt
