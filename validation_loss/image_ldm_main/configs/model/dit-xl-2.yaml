@@ -1,5 +1,5 @@
 name: DiT-XL-2
-target: ldm.models.transformer.dit.DiT
+target: validation_loss.image_ldm_main.ldm.models.transformer.dit.DiT
 params:
   in_channels: 4
   input_size: 32

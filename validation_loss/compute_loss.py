@@ -2,6 +2,8 @@
 #%pip install pytorch-lightning -q
 #%pip install torchmetrics[image] -q
 
+# run with `python -m validation_loss.image_ldm_main.ldm.logging`
+
 import torch
 import torchvision
 import os
@@ -20,26 +22,29 @@ from validation_loss.image_ldm_main.ldm.trainer import TrainerModuleLatentFlow
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+class ImageNetTorchDataset(torch.utils.data.Dataset):
+    def __init__(self, hf_dataset, transform):
+        self.dataset = hf_dataset
+        self.transform = transform
+
+    def __getitem__(self, idx):
+        image = self.dataset[idx]['image']
+        image = self.transform(image)
+        return image
+
+    def __len__(self):
+        return len(self.dataset)
+    
+def center_crop_256(img):
+    return center_crop_arr(img, 256)
+
 
 def prepare_dataset(batch_size=64):
     val_transform = transforms.Compose([
-        transforms.Lambda(lambda img: center_crop_arr(img, 256)),
+        transforms.Lambda(center_crop_256),
         transforms.ToTensor(),
         transforms.Normalize([0.5]*3, [0.5]*3)
     ])
-
-    class ImageNetTorchDataset(torch.utils.data.Dataset):
-        def __init__(self, hf_dataset, transform):
-            self.dataset = hf_dataset
-            self.transform = transform
-
-        def __getitem__(self, idx):
-            image = self.dataset[idx]['image']
-            image = self.transform(image)
-            return image
-
-        def __len__(self):
-            return len(self.dataset)
 
     dataset = load_dataset("mlx-vision/imagenet-1k", split="validation")
     val_dataset = ImageNetTorchDataset(dataset, val_transform)
@@ -60,11 +65,14 @@ def preprare_model():
     model.load_state_dict(state_dict)
     model.eval()  
 
-    cfg = OmegaConf.load("dit-xl-2.yaml")
+    cfg_path = "validation_loss/image_ldm_main/configs/model/dit-xl-2.yaml"
+    cfg = OmegaConf.load(cfg_path)
+    print(f"Loaded configuration from {cfg_path}, starting with TrainerModuleLatentFlow...")
     module = TrainerModuleLatentFlow(
         model=model,
         flow_cfg=cfg
     )   
+    print("TrainerModuleLatentFlow initialized with the model and configuration.")
     module.eval()
     module.to(device)
     print("Model prepared and loaded with pre-trained weights.")
