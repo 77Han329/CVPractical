@@ -2,9 +2,9 @@ import wandb
 import torch
 import einops
 from PIL import Image
-from jutils import ims_to_grid    
-from lightning.pytorch.loggers import WandbLogger
-from lightning.pytorch.loggers import TensorBoardLogger
+#from validation_loss.image_ldm_main.jutils import ims_to_grid    
+#from pytorch_lightning.pytorch.loggers import WandbLogger
+#from pytorch_lightning.pytorch.loggers import TensorBoardLogger
 
 
 def log_images(logger, ims, tag, stack="row", split=4, step=0):
