@@ -12,7 +12,7 @@ from tqdm import tqdm
 from torch import Tensor
 from functools import partial
 
-from jutils import instantiate_from_config
+from validation_loss.image_ldm_main.jutils import instantiate_from_config
 
 
 def exists(x):

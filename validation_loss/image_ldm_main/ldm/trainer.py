@@ -168,6 +168,30 @@ class TrainerModuleLatentFlow(LightningModule):
         if exists(self.ema_model): update_ema(self.ema_model, self.model, decay=self.ema_rate)
         if self.stop_training: self.stop_training_method()
 
+    """
+    def validation_step(self, batch, batch_idx):
+        import torch.nn.functional as F
+        ims = batch["image"]
+        label = batch.get("label", None)
+        
+        # 1. Encode images to latents (original size)
+        latent = self.encode(ims)  # e.g., [B, C, 224, 224]
+        
+        # 2. Resize latents to match SiT's expected input (32x32)
+        latent_resized = F.interpolate(
+            latent, 
+            size=(32, 32), 
+            mode="bilinear"  # or "area" for downsampling
+        )
+        
+        # 3. Compute loss using resized latents
+        model = self.ema_model if hasattr(self, 'ema_model') else self.model
+        loss = model.compute_loss(latent_resized, y=label)
+        
+        # 4. Store loss
+        self.val_losses.update(loss.detach().unsqueeze(0))
+
+    """
     def validation_step(self, batch, batch_idx):
         ims = batch["image"]
         label = batch.get("label", None)
@@ -184,30 +208,36 @@ class TrainerModuleLatentFlow(LightningModule):
             _, val_loss_per_segment = self.flow.validation_losses(model=sample_model, x1=latent, x0=noise, y=label)
             self.val_losses.update(val_loss_per_segment.unsqueeze(0))
 
-        # generation
-        if self.latent_shape is None:
-            _latent = self.encode(ims)
-            self.latent_shape = _latent.shape[1:]
-            self.batch_size = bs
-        
-        # sample images
-        z = torch.randn((bs, *self.latent_shape), generator=g, dtype=ims.dtype).to(ims.device)
-        samples = self.flow.generate(model=sample_model, x=z, y=label, **self.sample_kwargs)
-        samples = self.decode(samples)
+        # Skip generation if model doesn't support it
+        if not hasattr(self.flow, 'generate'):
+            samples = None
+        else:
+            # generation
+            if self.latent_shape is None:
+                _latent = self.encode(ims)
+                self.latent_shape = _latent.shape[1:]
+                self.batch_size = bs
+            
+            # sample images
+            z = torch.randn((bs, *self.latent_shape), generator=g, dtype=ims.dtype).to(ims.device)
+            samples = self.flow.generate(model=sample_model, x=z, y=label, **self.sample_kwargs)
+            samples = self.decode(samples)
 
         # metrics
-        self.metric_tracker(ims, samples)
+        if samples is not None:  # Only compute metrics if we have samples
+            self.metric_tracker(ims, samples)
 
         # save the images for visualization
         if self.val_images is None:
             real_ims = un_normalize_ims(ims)
-            fake_ims = un_normalize_ims(samples)
+            fake_ims = un_normalize_ims(samples) if samples is not None else None
             self.val_images = {
                 "real": real_ims[:self.n_images_to_vis],
-                "fake": fake_ims[:self.n_images_to_vis],
+                "fake": fake_ims[:self.n_images_to_vis] if fake_ims is not None else None,
             }
+        #"""
 
-    def on_validation_epoch_end(self, split=4):
+    def on_validation_epoch_end(self, split=8):
         # visualization
         for key, ims in self.val_images.items():
             log_images(self.logger, ims, f"val/{key}/samples", stack="row", split=split, step=self.global_step)
@@ -220,6 +250,7 @@ class TrainerModuleLatentFlow(LightningModule):
         for k, v in metrics.items():
             self.log(f"val/{k}", v, sync_dist=True)
         self.metric_tracker.reset()
+        print(f"val_losses: {self.val_losses.value}")
 
         # compute val loss if available (Flow models)
         if len(self.val_losses.value) > 0:
@@ -232,7 +263,7 @@ class TrainerModuleLatentFlow(LightningModule):
 
         # log some information
         self.val_epochs += 1
-        self.print(f"Val epoch {self.val_epochs:,} | Optimizer step {self.global_step:,}")
+        print(f"Val epoch {self.val_epochs:,} | Optimizer step {self.global_step:,}")
         metric_str = " | ".join([f"{k}: {v:.4f}" for k, v in metrics.items()])
         self.print(metric_str)
 
