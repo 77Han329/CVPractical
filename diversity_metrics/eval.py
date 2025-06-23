@@ -1,7 +1,7 @@
 import os
 import argparse
 import csv
-from metrics import DreamSimMetric, LPIPSMetric, DINODiversityMetric, CLIPDiversityMetric
+from metrics import DreamSimMetric, LPIPSMetric, DINODiversityMetric, CLIPDiversityMetric,VendiDiversityMetric
 
 def compute_diversity_metrics(npz_path, metric):
     if metric == "lpips":
@@ -51,7 +51,7 @@ def save_to_csv(csv_path, row_data, header=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diversity metrics")
-    parser.add_argument("--metric", type=str, choices=["lpips", "dreamsim", "dinov2", "clip"], required=True)
+    parser.add_argument("--metric", type=str, choices=["lpips", "dreamsim", "dinov2", "clip","vendi"], required=True)
     parser.add_argument("--number-of-samples", type=int, default=100)
     parser.add_argument("--label", type=int, choices=[0, 97, 300, 389, 409, 555, 569, 571, 574, 701], default=0)
     parser.add_argument("--sample-method", type=str, choices=["ode", "sde"], default="ode")
