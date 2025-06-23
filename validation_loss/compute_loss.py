@@ -19,6 +19,9 @@ from train import center_crop_arr
 from models import SiT_models
 from download import find_model
 from validation_loss.image_ldm_main.ldm.trainer import TrainerModuleLatentFlow
+import torch.nn.functional as F
+from validation_loss.image_ldm_main.ldm.flow import Flow
+import csv
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -34,6 +37,7 @@ import scipy.io
 class ImageNetValDatasetWithLabels(Dataset):
     def __init__(self, image_dir, label_txt_path, meta_mat_path, synset_words_path, transform=None, max_images=1000):
         self.image_paths = sorted(glob(os.path.join(image_dir, "*")))[:max_images]
+        print(len(self.image_paths), "images found in", image_dir)
         self.labels = self._load_labels(label_txt_path, meta_mat_path, synset_words_path)[:max_images]
 
         self.transform = transform or transforms.Compose([
@@ -84,13 +88,13 @@ def prepare_dataset(batch_size=64):
     #dataset = load_dataset("mlx-vision/imagenet-1k", split="validation")
 
     val_dataset = ImageNetValDatasetWithLabels(
-        image_dir="/Users/piadonabauer/Downloads/ILSVRC2012_img_val",
+        image_dir="/home/coder/ILSVRC2012_img_val",
         label_txt_path="validation_loss/preprocessing/data/ILSVRC2012_validation_ground_truth.txt",
         meta_mat_path="validation_loss/preprocessing/data/meta.mat",
         synset_words_path="validation_loss/preprocessing/data/synset_words.txt"
     )
 
-    val_subset = torch.utils.data.Subset(val_dataset, indices=range(1_000)) 
+    #val_subset = torch.utils.data.Subset(val_dataset, indices=range(1_000)) 
     val_loader = DataLoader(
         val_subset, 
         batch_size=batch_size, 
@@ -123,7 +127,7 @@ def preprare_model():
     )   
     print("TrainerModuleLatentFlow initialized with the model and configuration.")
     module.eval()
-    #module.to(device)
+    module.to(device)
     print("Model prepared and loaded with pre-trained weights.")
     return module
 
@@ -155,10 +159,7 @@ def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.
         print("module.val_losses is not properly initialized.")
 """
 
-import torch.nn.functional as F
-from validation_loss.image_ldm_main.ldm.flow import Flow
-
-def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.npy"):
+def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.csv"):
     print("Running validation...")
     
     # 1. Create Flow instance (match your training configuration)
@@ -197,7 +198,7 @@ def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.
         
         all_losses.append(segment_losses.cpu())
     
-    # 5. Process results
+    # 5. Process results and save to CSV
     if len(all_losses) > 0:
         all_losses = torch.stack(all_losses)  # [num_batches, num_segments]
         mean_loss = all_losses.mean().item()
@@ -207,7 +208,24 @@ def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.
         for i, seg_loss in enumerate(all_losses.mean(dim=0)):
             print(f"Segment {i}: {seg_loss.item():.6f}")
         
-        np.save(save_path, all_losses.numpy())
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        
+        # Save to CSV
+        with open(save_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            
+            # Write header
+            writer.writerow(['batch_idx'] + [f'segment_{i}' for i in range(8)])
+            
+            # Write data
+            for batch_idx, batch_losses in enumerate(all_losses):
+                writer.writerow([batch_idx] + batch_losses.tolist())
+            
+            # Write mean losses
+            writer.writerow(['mean'] + all_losses.mean(dim=0).tolist())
+            writer.writerow(['overall_mean', mean_loss])
+        
         print(f"Saved losses to {os.path.abspath(save_path)}")
     else:
         print("No validation losses recorded!")
