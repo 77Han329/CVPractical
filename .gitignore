@@ -12,6 +12,7 @@ outputs/
 *.csv
 *.png
 *.npz
+*.pb
 models/
 guided-diffusion/
 sample.png
