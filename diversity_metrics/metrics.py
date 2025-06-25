@@ -249,38 +249,69 @@ class DINODiversityMetric:
 
 # ==================== CLIP Diversity ====================
 class CLIPDiversityMetric:
-    def __init__(self, use_gpu=True):
+    def __init__(self, use_gpu=True, feature_type='cls_token'):
+        """
+        Args:
+            use_gpu: Whether to use GPU if available
+            feature_type: Either 'cls_token' (default) or 'avg_pool'
+
+        Example usage:
+            # CLS token features (default)
+            metric = CLIPDiversityMetric()
+            mean, std = metric.compute_from_npz("test.npz")
+
+            # Average pooled features
+            metric = CLIPDiversityMetric(feature_type='avg_pool')
+            mean, std = metric.compute_from_npz("test.npz")
+        """
         self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
         self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(self.device).eval()
         self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-
+        
+        if feature_type not in ['cls_token', 'avg_pool']:
+            raise ValueError("feature_type must be either 'cls_token' or 'avg_pool'")
+        self.feature_type = feature_type
+    
     def _preprocess_np_image(self, np_img):
         if np_img.dtype != np.uint8:
             np_img = (np.clip(np_img, 0, 1) * 255).astype(np.uint8)
         return Image.fromarray(np_img)
-
+    
+    def _get_features(self, img):
+        """Get features based on selected feature_type"""
+        inputs = self.processor(images=img, return_tensors="pt").to(self.device)
+        
+        with torch.no_grad():
+            if self.feature_type == 'cls_token':
+                # Standard CLIP features
+                feat = self.model.get_image_features(**inputs)
+            else:
+                # Average pooled features
+                outputs = self.model.vision_model(**inputs)
+                patch_embeddings = outputs.last_hidden_state[:, 1:, :]  # Exclude CLS token
+                avg_pooled = patch_embeddings.mean(dim=1)
+                feat = self.model.visual_projection(avg_pooled)
+            
+            return F.normalize(feat, dim=1).squeeze(0)
+    
     def compute_from_npz(self, npz_path):
         data = np.load(npz_path)["arr_0"]
         feats = []
 
-        print("Extracting CLIP features...")
+        print(f"Extracting {self.feature_type} features...")
         for img in tqdm(data):
             pil_img = self._preprocess_np_image(img)
-            inputs = self.processor(images=pil_img, return_tensors="pt").to(self.device)
-            with torch.no_grad():
-                feat = self.model.get_image_features(**inputs)
-                feat = F.normalize(feat, dim=1)
-            feats.append(feat.squeeze(0))
+            feats.append(self._get_features(pil_img))
 
         feats = torch.stack(feats)
-
         dists = []
         for i in range(len(feats)):
             for j in range(i + 1, len(feats)):
                 dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine distance
 
         return float(np.mean(dists)), float(np.std(dists))
-    
+
+
 
 # ==================== CLIP Diversity ====================
 
