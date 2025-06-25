@@ -11,12 +11,6 @@ from tqdm import tqdm
 from dreamsim import dreamsim
 from transformers import AutoImageProcessor, AutoModel, CLIPProcessor, CLIPModel
 import torch.nn.functional as F
-from torchvision.models.inception import inception_v3
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from scipy import linalg
-from sklearn.neighbors import NearestNeighbors
-from vendi_score import image_utils
 
 
 # ==================== LPIPS ====================
@@ -305,26 +299,27 @@ class CLIPDiversityMetric:
 # ==================== Vendi Diversity ====================
 
 # pip install vendi_score
-class VendiDiversityMetric:
-    def __init__(self, use_gpu=True, embeddings="default"):
-        self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
-        self.embeddings = embeddings  # 'default' for pool-2048, 'inception' for Inception v3
+import numpy as np
+import torch
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms, models
+from sklearn.preprocessing import normalize
+from PIL import Image
+from tqdm import tqdm
+import vendi_score.vendi as vendi
+from torchvision.models import inception_v3, Inception_V3_Weights
 
-    def compute_from_npz(self, npz_path):
-        data = np.load(npz_path)["arr_0"]
 
-        print("Compute Vendi Score...")
-        if self.embeddings == "default":
-            vs = [image_utils.pixel_vendi_score([Image.fromarray(img.copy()) for img in imgs]) for imgs in data]
-        elif self.embeddings == "inception":
-            vs = [image_utils.embedding_vendi_score([Image.fromarray(img.copy()) for img in imgs], device=self.device) for imgs in data]
-        else:
-            raise ValueError("Invalid embeddings type. Use 'default' or 'inception'.")
+class NumpyImageDataset(Dataset):
+    def __init__(self, array, transform=None):
+        self.array = array
+        self.transform = transform
 
-        n = len(data)
-        mean = np.mean(vs).item()
-        mean_normalized = mean / n
-        std = np.std(vs).item()
-        std_normalized = std / n
+    def __len__(self):
+        return len(self.array)
 
-        return float(mean_normalized), float(std_normalized)
+    def __getitem__(self, idx):
+        img = Image.fromarray(self.array[idx].astype(np.uint8))
+        if self.transform:
+            img = self.transform(img)
+        return img
