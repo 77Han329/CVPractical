@@ -25,3 +25,4 @@ __pycache__/
 outputs/
 models/
 *.pyc
+slurmlogs/
