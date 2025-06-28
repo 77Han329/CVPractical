@@ -1,6 +1,7 @@
 import os
 import argparse
 import csv
+import re
 from metrics import DreamSimMetric, LPIPSMetric, DINODiversityMetric, CLIPDiversityMetric
 
 def compute_diversity_metrics(npz_path, metric, batch_size, seed, feature_type):
@@ -28,9 +29,12 @@ def compute_diversity_metrics(npz_path, metric, batch_size, seed, feature_type):
     else:
         raise ValueError("Unsupported metric type.")
     
-    return metric_instance.compute_from_npz(npz_path, max_samples=batch_size,seed=42)
+    return metric_instance.compute_div(npz_path, max_samples=batch_size,seed=seed)
 
 def save_to_csv(csv_path, row_data):
+    """
+    Save metric results to a CSV file.
+    """
     file_exists = os.path.isfile(csv_path)
     with open(csv_path, mode='a', newline='') as f:
         fieldnames = list(row_data.keys())
@@ -38,6 +42,18 @@ def save_to_csv(csv_path, row_data):
         if not file_exists:
             writer.writeheader()
         writer.writerow(row_data)
+
+def extract_setting_from_path(npz_path):
+    """
+    Extracts a simplified setting name from the npz filename.
+    e.g. 'SiT-XL-2-pretrained-cfg-1.5-4-ODE-250-euler.npz' => 'cfg-1.5-ODE'
+    """
+    filename = os.path.basename(npz_path)
+    match = re.search(r'cfg-(\d\.\d)-\d+-(ODE|SDE)', filename)
+    if match:
+        return f"cfg-{match.group(1)}-{match.group(2)}"
+    else:
+        return "unknown_setting"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diversity metrics")
@@ -56,15 +72,20 @@ if __name__ == "__main__":
     seed = args.seed
     mean, std = compute_diversity_metrics(npz_path, args.metric, args.batch_size,seed,args.feature_type)
 
-    print(f"Mean: {mean:.4f}, Std: {std:.4f}")
 
+    print(f"Metric: {args.metric} | Setting: {extract_setting_from_path(npz_path)}")
+    print(f"Mean: {mean:.4f} | Std: {std:.4f}")
+
+    # Save result
     save_to_csv(
-    args.csv_path,
-    row_data={
-        "metric": args.metric,
-        "npz_path": npz_path,
-        "batch_size": args.batch_size,
-        "mean": f"{mean:.4f}",
-        "std": f"{std:.4f}"
-    }
-)
+        args.csv_path,
+        row_data={
+            "setting": extract_setting_from_path(npz_path),
+            "metric": args.metric,
+            "batch_size": args.batch_size,
+            "seed": args.seed,
+            "feature_type": args.feature_type,
+            "mean": f"{mean:.4f}",
+            "std": f"{std:.4f}"
+        }
+    )
