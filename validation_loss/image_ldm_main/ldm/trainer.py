@@ -22,6 +22,7 @@ def un_normalize_ims(ims):
 
 @torch.no_grad()
 def update_ema(ema_model, model, decay=0.9999):
+    print("Updating EMA model with decay:", decay)
     """
     Step the EMA model towards the current model.
     """
@@ -168,30 +169,6 @@ class TrainerModuleLatentFlow(LightningModule):
         if exists(self.ema_model): update_ema(self.ema_model, self.model, decay=self.ema_rate)
         if self.stop_training: self.stop_training_method()
 
-    """
-    def validation_step(self, batch, batch_idx):
-        import torch.nn.functional as F
-        ims = batch["image"]
-        label = batch.get("label", None)
-        
-        # 1. Encode images to latents (original size)
-        latent = self.encode(ims)  # e.g., [B, C, 224, 224]
-        
-        # 2. Resize latents to match SiT's expected input (32x32)
-        latent_resized = F.interpolate(
-            latent, 
-            size=(32, 32), 
-            mode="bilinear"  # or "area" for downsampling
-        )
-        
-        # 3. Compute loss using resized latents
-        model = self.ema_model if hasattr(self, 'ema_model') else self.model
-        loss = model.compute_loss(latent_resized, y=label)
-        
-        # 4. Store loss
-        self.val_losses.update(loss.detach().unsqueeze(0))
-
-    """
     def validation_step(self, batch, batch_idx):
         ims = batch["image"]
         label = batch.get("label", None)
@@ -235,12 +212,12 @@ class TrainerModuleLatentFlow(LightningModule):
                 "real": real_ims[:self.n_images_to_vis],
                 "fake": fake_ims[:self.n_images_to_vis] if fake_ims is not None else None,
             }
-        #"""
 
     def on_validation_epoch_end(self, split=8):
         # visualization
         for key, ims in self.val_images.items():
-            log_images(self.logger, ims, f"val/{key}/samples", stack="row", split=split, step=self.global_step)
+            #log_images(self.logger, ims, f"val/{key}/samples", stack="row", split=split, step=self.global_step)
+            pass
         
         # reset val images
         self.val_images = None
