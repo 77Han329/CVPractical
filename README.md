@@ -48,6 +48,18 @@ To achieve this, we implemented a comprehensive evaluation pipeline that measure
 │   ├── compute_fid.py  
 │   ├── eval.py  
 │   └── metrics.py   
+│   
+│── exp-local/      
+│   ├── cfg_sde&ode_res/
+│   │   ├── compute_fid.py  
+│   │   ├── eval.py  
+│   │   └── metrics.py   
+│   │
+│   ├── sde_norm&form/ 
+│   │   ├── compute_fid.py  
+│   │   ├── eval.py  
+│   │   └── metrics.py  
+│ 
 ├── validation_loss/               
 └── vis/               
         
@@ -60,22 +72,23 @@ To achieve this, we implemented a comprehensive evaluation pipeline that measure
 Clone the repo and create the environment:
 
 ```bash
-git clone https://github.com/willisma/SiT.git
-cd SiT
-conda env create -f environment.yml
+git clone https://github.com/77Han329/CVPractical.git
+cd CVPractical
+conda env create -f SiT/environment.yml
 conda activate SiT
 
 # Generate samples across multiple classes
 torchrun --nproc_per_node=4 sample_ddp.py ODE --model SiT-XL/2 --num-fid-samples 10000
 
-# Compute metrics from saved samples
-python diversity_metrics/run_metrics.py --input-dir path/to/samples
+# Compute metrics from saved samples(FID,sFID,Inception Score, Precision, Recall)
+python diversity_metrics/compute_fid.py \
+  --ref_batch samples/VIRTUAL_imagenet256_labeled.npz \
+  --sample_batch path/to/sample_batch.npz
 
 ##Visualizing Diversity
-python diversity_metrics/vis_intra.py --csv-dir results/metrics --save-dir outputs/
+python vis.py --csv-dir --save-dir outputs/
 ```
 ---
-
 
 ## Experiment Results
 

@@ -2,10 +2,7 @@ __pycache__
 wandb
 
 .DS_store
-samples
-results
 pretrained_models/
-
 logs/
 runs/
 outputs/
@@ -18,7 +15,6 @@ guided-diffusion/
 sample.png
 final_sample_batch/
 samples/
-exp-local/
 *.sh
 run_lpips.py
 __pycache__/

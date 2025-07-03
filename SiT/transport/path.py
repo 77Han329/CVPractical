@@ -57,7 +57,7 @@ class ICPlan:
             "sigma": norm * self.compute_sigma_t(t)[0],
             "linear": norm * (1 - t),
             "decreasing": 0.25 * (norm * th.cos(np.pi * t) + 1) ** 2,
-            "inccreasing-decreasing": norm * th.sin(np.pi * t) ** 2,
+            "increasing-decreasing": norm * th.sin(np.pi * t) ** 2,
         }
 
         try:

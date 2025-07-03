@@ -130,7 +130,7 @@ def main(mode, args):
         folder_name = f"{model_string_name}-{ckpt_string_name}-" \
                     f"cfg-{args.cfg_scale}-{args.per_proc_batch_size}-"\
                     f"{mode}-{args.num_sampling_steps}-{args.sampling_method}-"\
-                    f"{args.diffusion_form}-{args.last_step}-{args.last_step_size}"
+                    f"{args.diffusion_form}-{args.last_step}-{args.last_step_size}-{args.diffusion_norm}"
     sample_folder_dir = f"{args.sample_dir}/{folder_name}"
     if rank == 0:
         os.makedirs(sample_folder_dir, exist_ok=True)
@@ -182,7 +182,7 @@ def main(mode, args):
                     index = j * dist.get_world_size() + rank + total
                     step_path = os.path.join(sample_folder_dir, f"step_{step_idx:03d}_{index:06d}.png")
                     Image.fromarray(sample).save(step_path)
-            # 最终样本，用于 fid npz
+            
             samples = samples_all_steps[-1]
         else:
             samples = sample_fn(z, model_fn, **model_kwargs)[-1]

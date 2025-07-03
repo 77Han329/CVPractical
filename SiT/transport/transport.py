@@ -234,7 +234,7 @@ class Sampler:
 
         def diffusion_fn(x, t):
             diffusion = self.transport.path_sampler.compute_diffusion(x, t, form=diffusion_form, norm=diffusion_norm)
-            return diffusion
+            return th.as_tensor(diffusion, dtype=x.dtype, device=x.device)
         
         sde_drift = \
             lambda x, t, model, **kwargs: \
