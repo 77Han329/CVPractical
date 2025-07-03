@@ -7,7 +7,7 @@ logs/
 runs/
 outputs/
 *.csv
-*.png
+sde_spec_42/
 *.npz
 *.pb
 models/
