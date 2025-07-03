@@ -2,42 +2,42 @@
 #%pip install pytorch-lightning -q
 #%pip install torchmetrics[image] -q
 
-# run with `python -m validation_loss.image_ldm_main.ldm.logging`
 
-import torch
-import torchvision
 import os
+import csv
+import torch
+import scipy.io
 import numpy as np
-from datasets import load_dataset
+import torch.nn.functional as F
+import argparse
+import random
+from copy import deepcopy
+
 from torchvision import transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from PIL import Image
 from omegaconf import OmegaConf
 from tqdm import tqdm
-
-from train import center_crop_arr
-from models import SiT_models
-from download import find_model
+from SiT.train import center_crop_arr
+from SiT.models import SiT_models
+from SiT.download import find_model
 from validation_loss.image_ldm_main.ldm.trainer import TrainerModuleLatentFlow
-import torch.nn.functional as F
 from validation_loss.image_ldm_main.ldm.flow import Flow
-import csv
+from glob import glob
+from validation_loss.image_ldm_main.ldm.metrics import ImageMetricTracker
+from torchmetrics.aggregation import CatMetric
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-import os
-from glob import glob
-from PIL import Image
-import numpy as np
-import torch
-from torch.utils.data import Dataset
-from torchvision import transforms
-import scipy.io
 
 class ImageNetValDatasetWithLabels(Dataset):
     def __init__(self, image_dir, label_txt_path, meta_mat_path, synset_words_path, transform=None, max_images=1000):
-        self.image_paths = sorted(glob(os.path.join(image_dir, "*")))[:max_images]
-        print(len(self.image_paths), "images found in", image_dir)
+        all_paths = sorted(glob(os.path.join(image_dir, "*")))
+        print(len(all_paths), "images found in", image_dir)
+        random.seed(42)  # Fixed seed ensures reproducibility
+        random.shuffle(all_paths)
+        self.image_paths = all_paths[:max_images]
+
         self.labels = self._load_labels(label_txt_path, meta_mat_path, synset_words_path)[:max_images]
 
         self.transform = transform or transforms.Compose([
@@ -84,29 +84,28 @@ def center_crop_256(img):
     return center_crop_arr(img, 256)
 
 
-def prepare_dataset(batch_size=64):
-    #dataset = load_dataset("mlx-vision/imagenet-1k", split="validation")
-
+def prepare_dataset(batch_size=64, num_samples=1000):
     val_dataset = ImageNetValDatasetWithLabels(
         image_dir="/home/coder/ILSVRC2012_img_val",
-        label_txt_path="validation_loss/preprocessing/data/ILSVRC2012_validation_ground_truth.txt",
-        meta_mat_path="validation_loss/preprocessing/data/meta.mat",
-        synset_words_path="validation_loss/preprocessing/data/synset_words.txt"
+        label_txt_path="validation_loss/imagenet_data/ILSVRC2012_validation_ground_truth.txt",
+        meta_mat_path="validation_loss/imagenet_data/meta.mat",
+        synset_words_path="validation_loss/imagenet_data/synset_words.txt",
+        max_images=num_samples,
     )
 
-    #val_subset = torch.utils.data.Subset(val_dataset, indices=range(1_000)) 
     val_loader = DataLoader(
-        val_subset, 
+        val_dataset, 
         batch_size=batch_size, 
         shuffle=False, 
         num_workers=4,
         pin_memory=False,
     )
+
     print(f"Validation set prepared with {len(val_loader.dataset)} images.")
     return val_loader
 
 
-def preprare_model():
+def prepare_model():
     img_features = 256
     model = SiT_models['SiT-XL/2'](
         input_size=img_features//8,
@@ -121,43 +120,19 @@ def preprare_model():
     cfg_path = "validation_loss/image_ldm_main/configs/model/sit-xl-2.yaml"
     cfg = OmegaConf.load(cfg_path)
     print(f"Loaded configuration from {cfg_path}, starting with TrainerModuleLatentFlow...")
+
     module = TrainerModuleLatentFlow(
         model=model,
         flow_cfg=cfg
     )   
     print("TrainerModuleLatentFlow initialized with the model and configuration.")
+
     module.eval()
     module.to(device)
     print("Model prepared and loaded with pre-trained weights.")
+
     return module
 
-"""
-def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.npy"):
-    print("Running validation...")
-    for batch_idx, batch in enumerate(tqdm(val_loader, desc="Validation", unit="batch")):
-        #batch = batch.to(device)
-        module.validation_step(batch, batch_idx=batch_idx)
-
-    # --- Compute validation loss (aggregate)
-    module.on_validation_epoch_end()
-
-    if hasattr(module, "val_losses") and hasattr(module.val_losses, "compute"):
-        if len(module.val_losses.value) > 0:
-            val_loss = module.val_losses.compute().cpu()
-            val_loss_np = val_loss.numpy()
-
-            # Print mean loss
-            mean_loss = val_loss_np.mean()
-            print(f"\n Validation Loss (mean): {mean_loss:.6f}")
-
-            # Save full loss array
-            np.save(save_path, val_loss_np)
-            print(f"Saved full loss to {os.path.abspath(save_path)}")
-        else:
-            print("No validation losses recorded — check if validation_step populates val_losses.")
-    else:
-        print("module.val_losses is not properly initialized.")
-"""
 
 def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.csv"):
     print("Running validation...")
@@ -180,19 +155,22 @@ def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.
         # 3. Encode to latents and resize for SiT
         with torch.no_grad():
             latent = module.encode(ims)  # [B,C,H,W]
+
             # Pad to 4 channels if needed
             if latent.size(1) == 3:
                 latent = F.pad(latent, (0,0,0,0,0,1))  # Adds 1 channel
+
+            # SiT expects latents of size 32x32
             if latent.shape[-2:] != (32, 32):
                 latent = F.interpolate(latent, size=(32, 32), mode='bilinear')
         
         # 4. Compute validation loss using Flow's method
         noise = torch.randn_like(latent)
         _, segment_losses = flow.validation_losses(
-            model=model,          # Your SiT model
-            x1=latent,            # Real data
-            x0=noise,             # Noise
-            y=labels,             # Optional labels
+            model=model,          
+            x1=latent,            
+            x0=noise,            
+            y=labels,             
             num_segments=8        # From SD3 paper
         )
         
@@ -230,10 +208,23 @@ def compute_loss(module, val_loader, save_path="validation_loss/output/val_loss.
     else:
         print("No validation losses recorded!")
 
-if __name__ == "__main__":
-    batch_size = 16
-    val_loader = prepare_dataset(batch_size)
-    module = preprare_model()
-    
-    compute_loss(module, val_loader)
 
+   
+
+
+if __name__ == "__main__":
+
+    # Example usage:
+    # python3 validation_loss/compute_loss.py --output_path validation_loss/output/val_loss_10000.csv --num_samples 10000
+
+    parser = argparse.ArgumentParser(description="Compute validation loss for SiT model.")
+    parser.add_argument("--output_path", type=str, default="validation_loss/output/val_loss.csv", help="CSV file to save validation losses.")
+    parser.add_argument("--num_samples", type=int, default=1000, help="Number of validation images to process.")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for validation.")
+
+    args = parser.parse_args()
+
+    val_loader = prepare_dataset(batch_size=args.batch_size, num_samples=args.num_samples)
+    module = prepare_model()
+    compute_loss(module, val_loader, save_path=args.output_path)
+    
