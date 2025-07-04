@@ -167,7 +167,7 @@ def main(mode, args):
             z = torch.cat([z, z], 0)
             y_null = torch.tensor([1000] * n, device=device)
             y = torch.cat([y, y_null], 0)
-            model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
+            model_kwargs = dict(y=y, cfg_scale=args.cfg_scale, cfg_start=args.cfg_start, cfg_end=args.cfg_end)
             model_fn = model.forward_with_cfg
         else:
             model_kwargs = dict(y=y)
@@ -239,8 +239,10 @@ if __name__ == "__main__":
     parser.add_argument("--fixed-label", type=int, default=None,
                         help="0 97 300 389 409 555 569 571 574 701")
     parser.add_argument("--step-by-step", action='store_true', help="Save each intermediate sampling step")
-    #parser.add_argument("--guidance-start", type=float, default=0.0)
-    #parser.add_argument("--guidance-end", type=float, default=1.0)  
+    parser.add_argument("--cfg-start", type=float, default=0.0,
+                        help="Start applying classifier-free guidance at this t value (default: 0.0).")
+    parser.add_argument("--cfg-end", type=float, default=1.0,
+                        help="Stop applying classifier-free guidance at this t value (default: 1.0).")
 
     parse_transport_args(parser)
     if mode == "ODE":
