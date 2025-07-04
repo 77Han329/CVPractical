@@ -246,7 +246,7 @@ class SiT(nn.Module):
             x, _ = x.chunk(2, dim=1)
         return x
 
-    def forward_with_cfg(self, x, t, y, cfg_scale):
+    def forward_with_cfg(self, x, t, y, cfg_scale, cfg_start=0.0, cfg_end=1.0):
         """
         Forward pass of SiT, but also batches the unconSiTional forward pass for classifier-free guidance.
         """
@@ -260,7 +260,19 @@ class SiT(nn.Module):
         # eps, rest = model_out[:, :self.in_channels], model_out[:, self.in_channels:]
         eps, rest = model_out[:, :3], model_out[:, 3:]
         cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
-        half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
+
+        # Applies CFG only when t in [t_min, t_max]
+        half_t = t[: len(t) // 2]
+        apply_guidance = (half_t >= cfg_start) & (half_t <= cfg_end)
+
+        # uncomment to test if cfg is active:
+        #cfg_active_ratio = apply_guidance.float().mean().item()
+        #print(f"CFG active: {cfg_active_ratio * 100:.1f}% (t_min={half_t.min().item():.3f}, t_max={half_t.max().item():.3f})")
+
+        apply_guidance = apply_guidance.float().view(-1, *([1] * (len(x.shape) - 1)))  # expand dims for broadcasting
+        half_eps = uncond_eps + apply_guidance * cfg_scale * (cond_eps - uncond_eps)
+
+        #half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
         eps = torch.cat([half_eps, half_eps], dim=0)
         return torch.cat([eps, rest], dim=1)
 

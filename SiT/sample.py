@@ -96,7 +96,7 @@ def main(mode, args):
     z = torch.cat([z, z], 0)
     y_null = torch.tensor([1000] * n, device=device)
     y = torch.cat([y, y_null], 0)
-    model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
+    model_kwargs = dict(y=y, cfg_scale=args.cfg_scale, cfg_start=args.cfg_start, cfg_end=args.cfg_end)
 
     # Sample images:
     start_time = time()
@@ -130,6 +130,10 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a SiT checkpoint (default: auto-download a pre-trained SiT-XL/2 model).")
+    parser.add_argument("--cfg-start", type=float, default=0.0,
+                        help="Start applying classifier-free guidance at this t value (default: 0.0).")
+    parser.add_argument("--cfg-end", type=float, default=1.0,
+                        help="Stop applying classifier-free guidance at this t value (default: 1.0).")
 
 
     parse_transport_args(parser)
