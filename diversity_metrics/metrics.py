@@ -12,6 +12,8 @@ from dreamsim import dreamsim
 from transformers import AutoImageProcessor, AutoModel, CLIPProcessor, CLIPModel
 import torch.nn.functional as F
 
+from vendi_score import vendi, image_utils
+
 
 # ==================== LPIPS ====================
 class LPIPSMetric:
@@ -294,3 +296,52 @@ class CLIPDiversityMetric:
 
         return float(np.mean(dists)), float(np.std(dists))
 
+
+# ==================== Vendi Diversity ====================
+
+class VendiDiversityMetric:
+    """
+    Computes Vendi diversity scores (pixel-level or feature-level).
+
+    Requirements:
+        If using 'inception' type, make sure ~/.env/lib/python3.11/site-packages/vendi_score/image_utils.py includes:
+            from torchvision.models.inception import Inception_V3_Weights
+    """
+    def __init__(self, type="inception", use_gpu=True):
+        """
+        Args:
+            type (str): 'inception' or 'pixel' (default: 'inception')
+            use_gpu (bool): Whether to use GPU if available
+        """
+        if type not in ("inception", "pixel"):
+            raise ValueError("type must be either 'inception' or 'pixel'")
+        self.type = type
+        self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
+
+    def _to_pil(self, img):
+        if img.ndim == 2:
+            return Image.fromarray(img.astype(np.uint8), mode="L")
+        elif img.ndim == 3:
+            return Image.fromarray(img.astype(np.uint8))
+        else:
+            raise ValueError(f"Unexpected image shape: {img.shape}")
+
+    def _load_images_from_npz(self, npz_path):
+        """Load images from npz file and convert to PIL."""
+        data = np.load(npz_path)["arr_0"]
+        if data.shape[0] < 2:
+            raise ValueError("Need at least two images to compute Vendi diversity.")
+        return [self._to_pil(img) for img in data]
+
+    def compute_from_npz(self, npz_path):
+        """Compute Vendi diversity score from a .npz file."""
+        images = self._load_images_from_npz(npz_path)
+
+        if self.type == "pixel":
+            score = image_utils.pixel_vendi_score(images)
+        elif self.type == "inception":
+            score = image_utils.embedding_vendi_score(images, device=self.device)
+        else:
+            raise RuntimeError("Unsupported feature type")
+
+        return float(score), None
