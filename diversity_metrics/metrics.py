@@ -13,6 +13,8 @@ from transformers import AutoImageProcessor, AutoModel, CLIPProcessor, CLIPModel
 import torch.nn.functional as F
 
 from vendi_score import vendi, image_utils
+from torchmetrics.image import StructuralSimilarityIndexMeasure
+from torchvision import transforms
 
 
 # ==================== LPIPS ====================
@@ -345,3 +347,42 @@ class VendiDiversityMetric:
             raise RuntimeError("Unsupported feature type")
 
         return float(score), None
+    
+
+# ==================== MS-SSIM Diversity ====================
+
+# pip install monai
+class SSIMDiversityMetric:
+    """ Computes pairwise SSIM diversity scores from a .npz file."""
+    def __init__(self, use_gpu=True, data_range=1.0):
+        """
+        Args:
+            use_gpu: Use GPU if available
+            data_range: 1.0 for [0,1], 255.0 for [0,255]
+        """
+        self.device = torch.device("cuda" if use_gpu and torch.cuda.is_available() else "cpu")
+        self.ssim = StructuralSimilarityIndexMeasure(
+            data_range=data_range,
+            kernel_size=11  # default size for SSIM
+        ).to(self.device)
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+        ])
+
+    def compute_from_npz(self, npz_path):
+        """Compute pairwise SSIM diversity"""
+        data = np.load(npz_path)["arr_0"]
+        tensors = [self.transform(Image.fromarray((x*255).astype(np.uint8)))
+                  .unsqueeze(0).to(self.device) for x in data]
+        
+        scores = []
+        for i in tqdm(range(len(tensors))):
+            for j in range(i+1, len(tensors)):
+                with torch.no_grad():
+                    score = self.ssim(tensors[i], tensors[j]).item()
+                scores.append(score)
+        
+        mean_div = float(np.mean(scores))
+        std_div = float(np.std(scores))
+        #print(f"Mean: {mean_div:.4f}, Std: {std_div:.4f}")
+        return mean_div, std_div

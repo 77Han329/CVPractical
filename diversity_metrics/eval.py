@@ -2,7 +2,7 @@ import os
 import argparse
 import csv
 import re
-from metrics import DreamSimMetric, LPIPSMetric, DINODiversityMetric, CLIPDiversityMetric, VendiDiversityMetric
+from metrics import DreamSimMetric, LPIPSMetric, DINODiversityMetric, CLIPDiversityMetric, VendiDiversityMetric, SSIMDiversityMetric
 
 def compute_diversity_metrics(npz_path, metric, batch_size, seed, feature_type):
     """
@@ -28,6 +28,8 @@ def compute_diversity_metrics(npz_path, metric, batch_size, seed, feature_type):
         metric_instance = CLIPDiversityMetric(feature_type=feature_type)
     elif metric == "vendi":
         metric_instance = VendiDiversityMetric()
+    elif metric == "ssim":
+        metric_instance = SSIMDiversityMetric()
     else:
         raise ValueError("Unsupported metric type.")
     
