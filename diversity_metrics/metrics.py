@@ -121,12 +121,13 @@ class DreamSimMetric:
         print("Mean DreamSim Distance:", mean_dist)
     """
     def __init__(self, pretrained=True):
-        self.model, self.preprocess = dreamsim(pretrained=pretrained, device=device)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model, self.preprocess = dreamsim(pretrained=pretrained, device=self.device)
         self.model.eval()
 
     def _preprocess_np_image(self, np_image):
         img = Image.fromarray(np_image.astype(np.uint8)).convert("RGB")
-        return self.preprocess(img).to(device)
+        return self.preprocess(img).to(self.device)
 
     def _load_images_from_folder(self, folder_path):
         image_files = sorted([
@@ -139,7 +140,7 @@ class DreamSimMetric:
         tensors = []
         for f in tqdm(image_files, desc="Loading images from folder"):
             img = Image.open(os.path.join(folder_path, f)).convert("RGB")
-            tensors.append(self.preprocess(img).to(device))
+            tensors.append(self.preprocess(img).to(self.device))
         return tensors, image_files
 
     def _load_images_from_npz(self, npz_path):
@@ -153,24 +154,29 @@ class DreamSimMetric:
         image_names = [f"img_{i}" for i in range(data.shape[0])]
         return tensors, image_names
 
-    def compute_from_npz(self, input_path, return_pairwise_scores=False, save_scores_path=None):
-        """
-        Automatically detects if input_path is a folder or npz file
-        and computes DreamSim diversity scores.
-        """
+    def compute_from_npz(self, input_path, max_samples=None, seed=42, return_pairwise_scores=False, save_scores_path=None):
         if os.path.isdir(input_path):
-            tensors, image_names = self._load_images_from_folder(input_path)
-        elif input_path.endswith('.npz'):
-            tensors, image_names = self._load_images_from_npz(input_path)
-        else:
-            raise ValueError("Input path must be a folder or a .npz file.")
+            raise ValueError("Folder input not supported when using max_samples.")
+
+        data = np.load(input_path)['arr_0']
+
+        if data.shape[0] < 2:
+            raise ValueError("Need at least two images in npz to compute diversity.")
+
+        if max_samples is not None and max_samples < data.shape[0]:
+            rng = np.random.default_rng(seed)
+            indices = rng.choice(data.shape[0], size=max_samples, replace=False)
+            data = data[indices]
+
+        tensors = [self._preprocess_np_image(img) for img in tqdm(data, desc="Loading npz images")]
+        image_names = [f"img_{i}" for i in range(len(tensors))]
 
         pair_scores = {}
         distances = []
 
         for (i, j) in tqdm(itertools.combinations(range(len(tensors)), 2),
-                           desc="Computing pairwise DreamSim",
-                           total=len(tensors) * (len(tensors) - 1) // 2):
+                        desc="Computing pairwise DreamSim",
+                        total=len(tensors) * (len(tensors) - 1) // 2):
             with torch.no_grad():
                 dist = self.model(tensors[i], tensors[j]).item()
             pair_name = f"{image_names[i]}___{image_names[j]}"
@@ -186,21 +192,21 @@ class DreamSimMetric:
                 for name, score in pair_scores.items():
                     f.write(f"{name}: {score:.6f}\n")
 
-        if return_pairwise_scores:
-            return avg_dist, std_dist, pair_scores
-        else:
-            return avg_dist, std_dist
+        return (avg_dist, std_dist, pair_scores) if return_pairwise_scores else (avg_dist, std_dist)
 
 
 # ==================== DINOv2 ====================
 class DINODiversityMetric:
-    def __init__(self, use_gpu=True):
+    def __init__(self, use_gpu=True,feature_type='cls_token'):
         from PIL import Image
         import torchvision.transforms as T
 
         self.device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
         self.processor = AutoImageProcessor.from_pretrained("facebook/dinov2-base")
         self.model = AutoModel.from_pretrained("facebook/dinov2-base").to(self.device).eval()
+        if feature_type not in ['cls_token', 'avg_pool']:
+            raise ValueError("feature_type must be either 'cls_token' or 'avg_pool'")
+        self.feature_type = feature_type
 
     def _preprocess_np_image(self, np_img):
         from PIL import Image
@@ -208,28 +214,30 @@ class DINODiversityMetric:
             np_img = (np.clip(np_img, 0, 1) * 255).astype(np.uint8)
         return Image.fromarray(np_img)
 
-    def compute_from_npz(self, npz_path):
-        import numpy as np
-        from tqdm import tqdm
+    def compute_from_npz(self, npz_path, max_samples=None, seed=42):
         data = np.load(npz_path)["arr_0"]
+
+        if max_samples is not None and max_samples < data.shape[0]:
+            rng = np.random.default_rng(seed)
+            indices = rng.choice(data.shape[0], size=max_samples, replace=False)
+            data = data[indices]
+
         feats = []
 
-        print("Extracting DINOv2 features (via HuggingFace)...")
+        print("Extracting DINOv2 features...")
         for img in tqdm(data):
             pil_img = self._preprocess_np_image(img)
             inputs = self.processor(images=pil_img, return_tensors="pt").to(self.device)
             with torch.no_grad():
                 outputs = self.model(**inputs)
-                feat = outputs.last_hidden_state[:, 0, :]  # [CLS] token
+                feat = outputs.last_hidden_state[:, 0, :]  # CLS token
             feats.append(feat.squeeze(0))
 
         feats = torch.stack(feats)
         feats = F.normalize(feats, dim=1)
 
-        dists = []
-        for i in range(len(feats)):
-            for j in range(i + 1, len(feats)):
-                dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine
+        dists = [1.0 - torch.dot(feats[i], feats[j]).item()
+                for i in range(len(feats)) for j in range(i+1, len(feats))]
 
         return float(np.mean(dists)), float(np.std(dists))
 
@@ -281,8 +289,14 @@ class CLIPDiversityMetric:
             
             return F.normalize(feat, dim=1).squeeze(0)
     
-    def compute_from_npz(self, npz_path):
+    def compute_from_npz(self, npz_path, max_samples=None, seed=42):
         data = np.load(npz_path)["arr_0"]
+
+        if max_samples is not None and max_samples < data.shape[0]:
+            rng = np.random.default_rng(seed)
+            indices = rng.choice(data.shape[0], size=max_samples, replace=False)
+            data = data[indices]
+
         feats = []
 
         print(f"Extracting {self.feature_type} features...")
@@ -291,10 +305,8 @@ class CLIPDiversityMetric:
             feats.append(self._get_features(pil_img))
 
         feats = torch.stack(feats)
-        dists = []
-        for i in range(len(feats)):
-            for j in range(i + 1, len(feats)):
-                dists.append(1.0 - torch.dot(feats[i], feats[j]).item())  # cosine distance
+        dists = [1.0 - torch.dot(feats[i], feats[j]).item()
+                for i in range(len(feats)) for j in range(i+1, len(feats))]
 
         return float(np.mean(dists)), float(np.std(dists))
 
@@ -335,9 +347,14 @@ class VendiDiversityMetric:
             raise ValueError("Need at least two images to compute Vendi diversity.")
         return [self._to_pil(img) for img in data]
 
-    def compute_from_npz(self, npz_path):
+    def compute_from_npz(self, npz_path, max_samples=None, seed=42):
         """Compute Vendi diversity score from a .npz file."""
         images = self._load_images_from_npz(npz_path)
+
+        if max_samples is not None and max_samples < len(images):
+            rng = np.random.default_rng(seed)
+            indices = rng.choice(len(images), size=max_samples, replace=False)
+            images = [images[i] for i in indices]
 
         if self.type == "pixel":
             score = image_utils.pixel_vendi_score(images)
@@ -369,11 +386,17 @@ class SSIMDiversityMetric:
             transforms.ToTensor(),
         ])
 
-    def compute_from_npz(self, npz_path):
+    def compute_from_npz(self, npz_path, max_samples=None, seed=42):
         """Compute pairwise SSIM diversity"""
         data = np.load(npz_path)["arr_0"]
+
+        if max_samples is not None and max_samples < data.shape[0]:
+            rng = np.random.default_rng(seed)
+            indices = rng.choice(data.shape[0], size=max_samples, replace=False)
+            data = data[indices]
+
         tensors = [self.transform(Image.fromarray((x*255).astype(np.uint8)))
-                  .unsqueeze(0).to(self.device) for x in data]
+                .unsqueeze(0).to(self.device) for x in data]
         
         scores = []
         for i in tqdm(range(len(tensors))):
@@ -384,5 +407,4 @@ class SSIMDiversityMetric:
         
         mean_div = float(np.mean(scores))
         std_div = float(np.std(scores))
-        #print(f"Mean: {mean_div:.4f}, Std: {std_div:.4f}")
         return mean_div, std_div
