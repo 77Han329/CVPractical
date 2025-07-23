@@ -33,7 +33,7 @@ def compute_diversity_metrics(npz_path, metric, batch_size, seed, feature_type):
     else:
         raise ValueError("Unsupported metric type.")
     
-    return metric_instance.compute_div(npz_path, max_samples=batch_size,seed=seed)
+    return metric_instance.compute_from_npz(npz_path, max_samples=batch_size,seed=seed)
 
 def save_to_csv(csv_path, row_data):
     """
@@ -61,9 +61,7 @@ def extract_setting_from_path(npz_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diversity metrics")
-    #SiT-XL-2-pretrained-cfg-1.0-4-SDE-250-Euler-sigma-Mean-0.04.npz
-    parser.add_argument("--sample_batch", help="path to sample batch npz file",
-                        default="/home/stud/xhan/projects/cvprac/SiT/final_sample_batch_0/num_samples_10000/sde_cfg_1.0/SiT-XL-2-pretrained-cfg-1.0-4-SDE-250-Euler-sigma-Mean-0.04.npz")#SiT-XL-2-pretrained-cfg-1.0-4-ODE-
+    parser.add_argument("--sample_batch", help="path to sample batch npz file")
     parser.add_argument("--metric", type=str, choices=["lpips", "dreamsim", "dinov2", "clip"], required=True)
     parser.add_argument("--batch_size", type=int, default=100, help="Batch size for metric computation",required=True)
     parser.add_argument("--feature_type", type=str, choices=["cls_token", "avg_pool"],
@@ -85,6 +83,7 @@ if __name__ == "__main__":
         args.csv_path,
         row_data={
             "setting": extract_setting_from_path(npz_path),
+            "path": npz_path,
             "metric": args.metric,
             "batch_size": args.batch_size,
             "seed": args.seed,
