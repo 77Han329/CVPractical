@@ -92,3 +92,15 @@ python vis.py --csv-dir --save-dir outputs/
 
 ## Experiment Results
 [Download SiT Samples (CFG=1.0, ODE)](https://github.com/77Han329/CVPractical/releases/download/v1-samples/sit_samples_cfg1.0_ode_seed250.zip)
+
+## 📦 Pre-Sampled Outputs
+
+We provide pre-generated sample outputs of the SiT-XL/2 model for reproducibility and metric evaluation.
+
+👉 [Download Sample Output (CFG=1.0, ODE)](https://github.com/77Han329/CVPractical/releases/download/sit-samples-v1/SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz.zip)
+
+- Model: `SiT-XL/2`
+- Config: `CFG=1.0`
+- Sampler: `ODE`
+- Format: `.npz`
+- Size: 153 MB
