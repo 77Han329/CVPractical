@@ -91,5 +91,4 @@ python vis.py --csv-dir --save-dir outputs/
 ---
 
 ## Experiment Results
-
-NEED TO BE ADDED
+[Download SiT Samples (CFG=1.0, ODE)](https://github.com/77Han329/CVPractical/releases/download/v1-samples/sit_samples_cfg1.0_ode_seed250.zip)
