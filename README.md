@@ -124,7 +124,7 @@ This heatmap shows the correlation between metrics such as FID, LPIPS, DreamSim,
 Depicts how validation loss varies with number of samples, confirming the stability of model evaluation.
 
 </details>
-```
+
 ---
 
 ## 📦 Pre-Sampled Outputs
@@ -139,12 +139,9 @@ We provide pre-generated sample outputs of the SiT-XL/2 model for reproducibilit
 - Format: `.npz`
 - Number: `1000`
 
-
-```
 ---
 
-
-## 🙏 Acknowledgements
+## 📦 Pre-Sampled Outputs
 
 We would like to thank our supervisor **Johannes Schusterbauer** for his invaluable support throughout the project. In particular, he provided the implementation of `compute_fid.py`, which enables comprehensive evaluation of generative diversity through FID, sFID, Inception Score, Precision, and Recall.
 
