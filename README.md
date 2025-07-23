@@ -75,8 +75,7 @@ This Results includes experiments examining how the number of samples impacts di
 <summary><strong>2️⃣ CFG Comparison</strong></summary>
 
 📁 `exp-final/2.cfg_comparison/`  
-This comparison explores the effects of varying CFG (classifier-free guidance) scales on generation quality and diversity.2.cfg_comparison
-/div_cfg.png
+This comparison explores the effects of varying CFG (classifier-free guidance) scales on generation quality and diversity.
 ![Number Dependency](exp-final/2.cfg_comparison/div_cfg.png)
 ![Number Dependency](exp-final/2.cfg_comparison/fid_cfg.png)
 </details>
@@ -120,6 +119,8 @@ This heatmap shows the correlation between metrics such as FID, LPIPS, DreamSim,
 Depicts how validation loss varies with number of samples, confirming the stability of model evaluation.
 
 </details>
+
+
 ```
 ---
 
