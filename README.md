@@ -56,9 +56,70 @@ python vis.py --csv-dir --save-dir outputs/
 ```
 ---
 
-## Experiment Results
-[Download SiT Samples (CFG=1.0, ODE)](https://github.com/77Han329/CVPractical/releases/download/v1-samples/sit_samples_cfg1.0_ode_seed250.zip)
+## 🧪 Experiment Results
 
+The folder `exp-final/` contains visualizations from multiple experiments evaluating sampling strategies, diversity trade-offs, and metric behavior.
+
+<details>
+<summary><strong>1️⃣ Number Dependency</strong></summary>
+
+📁 `exp-final/1.number_dependency/`  
+![Number Dependency](exp-final/1.number_dependency/all_metrics_avg_std_vs_samples_with_featuretype.png)  
+![Number Dependency](exp-final/1.number_dependency/mean_fid.png)
+![Number Dependency](exp-final/1.number_dependency/std_fid.png)
+This Results includes experiments examining how the number of samples impacts diversity and metric stability.
+
+</details>
+
+<details>
+<summary><strong>2️⃣ CFG Comparison</strong></summary>
+
+📁 `exp-final/2.cfg_comparison/`  
+This comparison explores the effects of varying CFG (classifier-free guidance) scales on generation quality and diversity.2.cfg_comparison
+/div_cfg.png
+![Number Dependency](exp-final/2.cfg_comparison/div_cfg.png)
+![Number Dependency](exp-final/2.cfg_comparison/fid_cfg.png)
+</details>
+
+<details>
+<summary><strong>3️⃣ SDE vs ODE Comparison</strong></summary>
+
+📁 `exp-final/3.sde_comparison/`  
+This study compares sample diversity and realism between stochastic (SDE) and deterministic (ODE) sampling.
+
+</details>
+
+<details>
+<summary><strong>4️⃣ CFG Interval Study</strong></summary>
+
+📁 `exp-final/4.cfg_interval_study/`  
+Investigates whether finer-grained CFG sampling intervals yield better performance.
+
+</details>
+
+<details>
+<summary><strong>5️⃣ Trade-off Experiments</strong></summary>
+
+📁 `exp-final/tradeoff/`  
+Contains ablation studies on diversity-quality trade-offs, including various sampling configurations.
+
+</details>
+
+<details>
+<summary><strong>📊 Metric Correlation Heatmap</strong></summary>
+
+![Metric Correlation](exp-final/metric_correlation_heatmap.png)  
+This heatmap shows the correlation between metrics such as FID, LPIPS, DreamSim, and CLIP.
+
+</details>
+
+<details>
+<summary><strong>📈 Validation Loss vs Sample Size</strong></summary>
+
+![Validation Loss](exp-final/valloss_vs_samples.png)  
+Depicts how validation loss varies with number of samples, confirming the stability of model evaluation.
+
+</details>
 ## 📦 Pre-Sampled Outputs
 
 We provide pre-generated sample outputs of the SiT-XL/2 model for reproducibility and metric evaluation.
@@ -69,7 +130,7 @@ We provide pre-generated sample outputs of the SiT-XL/2 model for reproducibilit
 - Config: `CFG=1.0`
 - Sampler: `ODE`
 - Format: `.npz`
-- Size: 153 MB
+- Number: `1000`
 
 
 ## 🙏 Acknowledgements
