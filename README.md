@@ -120,6 +120,9 @@ This heatmap shows the correlation between metrics such as FID, LPIPS, DreamSim,
 Depicts how validation loss varies with number of samples, confirming the stability of model evaluation.
 
 </details>
+```
+---
+
 ## 📦 Pre-Sampled Outputs
 
 We provide pre-generated sample outputs of the SiT-XL/2 model for reproducibility and metric evaluation.
