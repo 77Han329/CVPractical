@@ -1,7 +1,7 @@
 ## Master Practical of Image and Video Synthesis  <br><sub>**Research of Diversity of SiT**</sub>
 [Our Report Paper](https://arxiv.org/pdf/2401.08740.pdf)
 
-![SiT samples](visuals/visual.png)
+![SiT samples](examples/odevssde—cfg/ode_sde_cfg.png)
 
 This repository extends the original [Scalable Interpolant Transformer (SiT)](https://arxiv.org/abs/2401.08740) project to **systematically evaluate the diversity** of generated images using various perceptual and statistical metrics. Our practical focuses on **benchmarking and analyzing SiT under different sampling settings** (SDE/ODE, CFG, noise levels, etc.), and includes tools for evaluating:
 
