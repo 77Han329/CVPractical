@@ -75,15 +75,17 @@ This Results includes experiments examining how the number of samples impacts di
 <summary><strong>2️⃣ CFG Comparison</strong></summary>
 
 📁 `exp-final/2.cfg_comparison/`  
-This comparison explores the effects of varying CFG (classifier-free guidance) scales on generation quality and diversity.
-![Number Dependency](exp-final/2.cfg_comparison/div_cfg.png)
-![Number Dependency](exp-final/2.cfg_comparison/fid_cfg.png)
+This comparison explores the effects of varying CFG (classifier-free guidance) scales on generation quality and diversity.2.cfg_comparison
+/div_cfg.png
+![CFG Comparison](exp-final/2.cfg_comparison/div_cfg.png)
+![CFG Comparison](exp-final/2.cfg_comparison/fid_cfg.png)
 </details>
 
 <details>
 <summary><strong>3️⃣ SDE vs ODE Comparison</strong></summary>
 
 📁 `exp-final/3.sde_comparison/`  
+![CFG Comparison](exp-final/3.sde_comparison/grid_4x2_with_top_legend.png)
 This study compares sample diversity and realism between stochastic (SDE) and deterministic (ODE) sampling.
 
 </details>
@@ -92,6 +94,8 @@ This study compares sample diversity and realism between stochastic (SDE) and de
 <summary><strong>4️⃣ CFG Interval Study</strong></summary>
 
 📁 `exp-final/4.cfg_interval_study/`  
+![CFG Inrerval](exp-final/4.cfg_interval_study/combined_metrics_subplot.png)
+![CFG Interval](exp-final/4.cfg_interval_study/all_metrics_2x2.png)
 Investigates whether finer-grained CFG sampling intervals yield better performance.
 
 </details>
@@ -100,6 +104,7 @@ Investigates whether finer-grained CFG sampling intervals yield better performan
 <summary><strong>5️⃣ Trade-off Experiments</strong></summary>
 
 📁 `exp-final/tradeoff/`  
+![Trade Off](exp-final/tradeoff/plot_pareto_lpips_high_vs_fid_low.png)
 Contains ablation studies on diversity-quality trade-offs, including various sampling configurations.
 
 </details>
@@ -119,8 +124,6 @@ This heatmap shows the correlation between metrics such as FID, LPIPS, DreamSim,
 Depicts how validation loss varies with number of samples, confirming the stability of model evaluation.
 
 </details>
-
-
 ```
 ---
 
@@ -135,6 +138,10 @@ We provide pre-generated sample outputs of the SiT-XL/2 model for reproducibilit
 - Sampler: `ODE`
 - Format: `.npz`
 - Number: `1000`
+
+
+```
+---
 
 
 ## 🙏 Acknowledgements
