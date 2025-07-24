@@ -141,7 +141,7 @@ We provide pre-generated sample outputs of the SiT-XL/2 model for reproducibilit
 
 ---
 
-## 📦 Pre-Sampled Outputs
+## 🙏 Acknowledgements
 
 We would like to thank our supervisor **Johannes Schusterbauer** for his invaluable support throughout the project. In particular, he provided the implementation of `compute_fid.py`, which enables comprehensive evaluation of generative diversity through FID, sFID, Inception Score, Precision, and Recall.
 
