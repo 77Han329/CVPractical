@@ -33,27 +33,62 @@ This repository extends the original [Scalable Interpolant Transformer (SiT)](ht
 ---
 
 
-## 🔧 Setup
-
-Clone the repo and create the environment:
+## 🔧 Run
+### 1. Clone Repository and Set Up Environment
 
 ```bash
 git clone https://github.com/77Han329/CVPractical.git
 cd CVPractical
-conda env create -f SiT/environment.yml
-conda activate SiT
 
-# Generate samples across multiple classes
-torchrun --nproc_per_node=4 sample_ddp.py ODE --model SiT-XL/2 --num-fid-samples 10000
-
-# Compute metrics from saved samples(FID,sFID,Inception Score, Precision, Recall)
-python diversity_metrics/compute_fid.py \
-  --ref_batch samples/VIRTUAL_imagenet256_labeled.npz \
-  --sample_batch path/to/sample_batch.npz
-
-##Visualizing Diversity
-python vis.py --csv-dir --save-dir outputs/
+conda env create -f environment.yml
+conda activate CVpractical
 ```
+### 2. Download Pre-Sampled Data
+To evaluate the diversity of the SiT-XL/2 model using metrics such as LPIPS, DreamSim, CLIP, and DINO, you need to download the following pre-generated samples:
+
+👉 [Download Presampled Data (CFG=1.0, ODE)](https://github.com/77Han329/CVPractical/releases/download/sit-samples-v1/SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz.zip)
+
+- **Model**: `SiT-XL/2`
+- **Config**: `CFG=1.0`
+- **Sampler**: `ODE`
+- **Format**: `.npz`
+- **Number**: `1000`
+
+After download, unzip the file and place it at the project root or under a preferred directory.
+
+### 3. Run Diversity Evaluation
+Once the sample file is ready, run:
+```bash
+cd diversity_metrics
+python eval.py python eval.py --sample_batch "your_sample_batch_directory" --metric clip --batch_size 5 
+```
+
+The resulting `diversity_metrics_results.csv` includes the following fields:
+
+- **setting**: cfg-1.0-ODE  
+- **path**: directory of `.npz` sample  
+- **metric**: clip  
+- **batch_size**: 5  
+- **seed**: (random seed used)  
+- **feature_type**: cls_token  
+- **mean**: (diversity score mean)  
+- **std**: (diversity score std deviation)
+
+### 4. Download Ref-Batch Data
+To evaluate (FID, sFID, Inception Score, Precision and Recall), you need to download following reference batch
+
+👉 [Download Reference Batch (ImageNet 256x256)](https://github.com/77Han329/CVPractical/releases/download/sit-ref/VIRTUAL_imagenet256_labeled.npz.zip)
+
+After download, unzip the file and place it at the project root or under a preferred directory.
+
+### 5. Run Evaluation
+
+Once the ref file is ready, run:
+```bash
+cd diversity_metrics
+python eval.py python compute_fid.py --ref_batch "your_ref_batch_directory" --sample_batch "your_sample_batch_directory"
+```
+
 ---
 
 ## 🧪 Experiment Results
