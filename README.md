@@ -3,7 +3,7 @@
 
 ![SiT samples](examples/odevssde—cfg/ode_sde_cfg.png)
 
-This repository extends the original [Scalable Interpolant Transformer (SiT)](https://arxiv.org/abs/2401.08740) project to **systematically evaluate the diversity** of generated images using various perceptual and statistical metrics. Our practical focuses on **benchmarking and analyzing SiT under different sampling settings** (SDE/ODE, CFG, noise levels, etc.)
+This repository extends the original [SiT: Exploring Flow and Diffusion-based Generative Models with Scalable Interpolant Transformers](https://arxiv.org/pdf/2401.08740) project to **systematically evaluate the diversity** of generated images using various perceptual and statistical metrics. Our practical focuses on **benchmarking and analyzing SiT under different sampling settings** (SDE/ODE, CFG, noise levels, etc.)
 
 
 ---
@@ -176,6 +176,6 @@ Depicts how validation loss varies with number of samples, confirming the stabil
 
 We would like to thank our supervisor **Johannes Schusterbauer** for his invaluable support throughout the project. In particular, he provided the implementation of `compute_fid.py`, which enables comprehensive evaluation of generative diversity through FID, sFID, Inception Score, Precision, and Recall.
 
-We also gratefully acknowledge the authors of **SiT (Scalable Interpolant Transformer)** for their excellent work, which forms the foundation of our experiments.  
+We also gratefully acknowledge the authors of **SiT: Exploring Flow and Diffusion-based Generative Models with Scalable Interpolant Transformers** for their excellent work, which forms the foundation of our experiments.  
 - Paper: [SiT: Exploring Flow and Diffusion-based Generative Models with Scalable Interpolant Transformers](https://arxiv.org/pdf/2401.08740)  
 - Code: [https://github.com/mxbi/sit](https://github.com/willisma/SiT)
