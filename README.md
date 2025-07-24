@@ -43,7 +43,7 @@ cd CVPractical
 conda env create -f environment.yml
 conda activate CVpractical
 ```
-### 2. Download Pre-Sampled Data
+### 2. 📦 Download Pre-Sampled Data
 To evaluate the diversity of the SiT-XL/2 model using metrics such as LPIPS, DreamSim, CLIP, and DINO, you need to download the following pre-generated samples:
 
 👉 [Download Presampled Data (CFG=1.0, ODE)](https://github.com/77Han329/CVPractical/releases/download/sit-samples-v1/SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz.zip)
@@ -74,7 +74,7 @@ The resulting `diversity_metrics_results.csv` includes the following fields:
 - **mean**: (diversity score mean)  
 - **std**: (diversity score std deviation)
 
-### 4. Download Ref-Batch Data
+### 4. 📦 Download Ref-Batch Data
 To evaluate (FID, sFID, Inception Score, Precision and Recall), you need to download following reference batch
 
 👉 [Download Reference Batch (ImageNet 256x256)](https://github.com/77Han329/CVPractical/releases/download/sit-ref/VIRTUAL_imagenet256_labeled.npz.zip)
@@ -162,19 +162,6 @@ Depicts how validation loss varies with number of samples, confirming the stabil
 
 ---
 
-## 📦 Pre-Sampled Outputs
-
-We provide pre-generated sample outputs of the SiT-XL/2 model for reproducibility and metric evaluation.
-
-👉 [Download Sample Output (CFG=1.0, ODE)](https://github.com/77Han329/CVPractical/releases/download/sit-samples-v1/SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz.zip)
-
-- Model: `SiT-XL/2`
-- Config: `CFG=1.0`
-- Sampler: `ODE`
-- Format: `.npz`
-- Number: `1000`
-
----
 
 ## 🙏 Acknowledgements
 
