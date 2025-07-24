@@ -27,8 +27,8 @@ FID_SPATIAL_NAME = "mixed_6/conv:0"
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ref_batch", help="path to reference batch npz file",default="/home/stud/xhan/projects/cvprac/SiT/samples/VIRTUAL_imagenet256_labeled.npz")
-    parser.add_argument("--sample_batch", help="path to sample batch npz file",default="/home/stud/xhan/projects/cvprac/SiT/samples/num_samples_100/label_0/ode_cfg_1.0/SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-dopri5.npz")
+    parser.add_argument("--ref_batch", help="path to reference batch npz file", required=True)
+    parser.add_argument("--sample_batch", help="path to sample batch npz file", required=True)
     args = parser.parse_args()
 
     config = tf.ConfigProto(

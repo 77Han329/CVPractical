@@ -61,15 +61,16 @@ def extract_setting_from_path(npz_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diversity metrics")
-    parser.add_argument("--sample_batch", help="path to sample batch npz file")
+    parser.add_argument("--sample_batch", help="path to sample batch npz file", default="SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz")
     parser.add_argument("--metric", type=str, choices=["lpips", "dreamsim", "dinov2", "clip"], required=True)
     parser.add_argument("--batch_size", type=int, default=100, help="Batch size for metric computation",required=True)
     parser.add_argument("--feature_type", type=str, choices=["cls_token", "avg_pool"],
                         default="cls_token", help="Feature type for clip/dino metrics")
-    parser.add_argument("--csv_path", type=str, default="/home/stud/xhan/projects/cvprac/SiT/diversity_results.csv")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
- 
+    parser.add_argument("--csv_path", type=str,help="Path to save the CSV results", default="diversity_metrics_results.csv")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    
     args = parser.parse_args()
+    assert args.batch_size < 1000, "Batch size should be less than 1000 to avoid memory issues."
     npz_path = args.sample_batch
     seed = args.seed
     mean, std = compute_diversity_metrics(npz_path, args.metric, args.batch_size,seed,args.feature_type)
