@@ -100,7 +100,7 @@ The resulting `SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz.csv` includes the
 
 ### 6. 🧪 Sampling Strategy
  
-The image sampling process follows the implementation in [`sample_ddp.py`](https://github.com/77Han329/CVPractical/SiT/sample_ddp.py) from the **SiT** repository.
+The image sampling process follows the implementation in [`sample_ddp.py`](https://github.com/77Han329/CVPractical/blob/main/SiT/sample_ddp.py) from the **SiT** repository.
 
 
 ---
