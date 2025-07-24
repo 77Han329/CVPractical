@@ -98,6 +98,11 @@ The resulting `SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz.csv` includes the
 - **prec**:  Result for Precision
 - **recall**:  Result for Recall
 
+### 6. 🧪 Sampling Strategy
+ 
+The image sampling process follows the implementation in [`sample_ddp.py`](https://github.com/77Han329/CVPractical/SiT/sample_ddp.py) from the **SiT** repository.
+
+
 ---
 
 ## 🧪 Experiment Results
