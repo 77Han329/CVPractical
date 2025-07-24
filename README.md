@@ -177,5 +177,5 @@ Depicts how validation loss varies with number of samples, confirming the stabil
 We would like to thank our supervisor **Johannes Schusterbauer** for his invaluable support throughout the project. In particular, he provided the implementation of `compute_fid.py`, which enables comprehensive evaluation of generative diversity through FID, sFID, Inception Score, Precision, and Recall.
 
 We also gratefully acknowledge the authors of **SiT (Scalable Interpolant Transformer)** for their excellent work, which forms the foundation of our experiments.  
-- Paper: [SiT: Scaling Transformers with Weight Interpolation](https://arxiv.org/abs/2312.00794)  
-- Code: [https://github.com/mxbi/sit](https://github.com/mxbi/sit)
+- Paper: [SiT: Scaling Transformers with Weight Interpolation](https://arxiv.org/pdf/2401.08740)  
+- Code: [https://github.com/mxbi/sit](https://github.com/willisma/SiT)
