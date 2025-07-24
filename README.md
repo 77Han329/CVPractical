@@ -3,7 +3,7 @@
 
 ![SiT samples](examples/odevssde—cfg/ode_sde_cfg.png)
 
-This repository extends the original [Scalable Interpolant Transformer (SiT)](https://arxiv.org/abs/2401.08740) project to **systematically evaluate the diversity** of generated images using various perceptual and statistical metrics. Our practical focuses on **benchmarking and analyzing SiT under different sampling settings** (SDE/ODE, CFG, noise levels, etc.), and includes tools for evaluating:
+This repository extends the original [Scalable Interpolant Transformer (SiT)](https://arxiv.org/abs/2401.08740) project to **systematically evaluate the diversity** of generated images using various perceptual and statistical metrics. Our practical focuses on **benchmarking and analyzing SiT under different sampling settings** (SDE/ODE, CFG, noise levels, etc.)
 
 
 ---
@@ -33,7 +33,7 @@ This repository extends the original [Scalable Interpolant Transformer (SiT)](ht
 ---
 
 
-## 🔧 Run
+## 🔧 Run the Code
 ### 1. Clone Repository and Set Up Environment
 
 ```bash
@@ -69,7 +69,7 @@ The resulting `diversity_metrics_results.csv` includes the following fields:
 - **path**: directory of `.npz` sample  
 - **metric**: clip  
 - **batch_size**: 5  
-- **seed**: (random seed used)  
+- **seed**: controls the random sampling of images for diversity calculation
 - **feature_type**: cls_token  
 - **mean**: (diversity score mean)  
 - **std**: (diversity score std deviation)
@@ -88,6 +88,15 @@ Once the ref file is ready, run:
 cd diversity_metrics
 python eval.py python compute_fid.py --ref_batch "your_ref_batch_directory" --sample_batch "your_sample_batch_directory"
 ```
+The resulting `SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz.csv` includes the following fields:
+
+- **sample_batch**: your_sample_batch_directory
+- **ref_batch**: your_ref_batch_directory
+- **inception_score**: Result for Inception Score
+- **fid**: Result for FID
+- **sfid**: Result for sFID
+- **prec**:  Result for Precision
+- **recall**:  Result for Recall
 
 ---
 
@@ -167,3 +176,6 @@ Depicts how validation loss varies with number of samples, confirming the stabil
 
 We would like to thank our supervisor **Johannes Schusterbauer** for his invaluable support throughout the project. In particular, he provided the implementation of `compute_fid.py`, which enables comprehensive evaluation of generative diversity through FID, sFID, Inception Score, Precision, and Recall.
 
+We also gratefully acknowledge the authors of **SiT (Scalable Interpolant Transformer)** for their excellent work, which forms the foundation of our experiments.  
+- Paper: [SiT: Scaling Transformers with Weight Interpolation](https://arxiv.org/abs/2312.00794)  
+- Code: [https://github.com/mxbi/sit](https://github.com/mxbi/sit)

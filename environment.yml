@@ -1,19 +1,21 @@
-name: SiT
+name: CVPractical
 channels:
   - pytorch
   - nvidia
 dependencies:
   - python >= 3.8
-  - pytorch >= 1.13
-  - torchvision
+  - pytorch == 2.7.0
+  - torchvision == 0.22.0
   - pytorch-cuda >=11.7
   - pip
   - pip:
+    - tensorflow==2.15.0 
     - timm
     - diffusers
     - accelerate
     - torchdiffeq
-    - wandb
     - matplotlib
     - lpips
     - dreamsim
+    - vendi_score
+    - torchmetrics
