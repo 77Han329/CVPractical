@@ -138,7 +138,8 @@ torchrun --nnodes=1 --nproc_per_node=1 sample_ddp.py ODE \
         --num-fid-samples 1000 \
         --cfg-scale 1.5 \
         --sample-dir "your_sample_directory"
-```bash
+```
+
 
 ---
 
