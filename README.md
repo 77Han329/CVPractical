@@ -137,6 +137,8 @@ torchrun --nnodes=1 --nproc_per_node=1 sample_ddp.py ODE \
         --model "SiT-XL/2" \
         --num-fid-samples 1000 \
         --cfg-scale 1.5 \
+        --cfg-start 0.2 \
+        --cfg-end 1.0 \
         --sample-dir "your_sample_directory"
 ```
 
