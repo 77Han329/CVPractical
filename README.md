@@ -98,10 +98,47 @@ The resulting `SiT-XL-2-pretrained-cfg-1.0-4-ODE-250-euler.npz.csv` includes the
 - **prec**:  Result for Precision
 - **recall**:  Result for Recall
 
-### 6. 🧪 Sampling Strategy
- 
-The image sampling process follows the implementation in [`sample_ddp.py`](https://github.com/77Han329/CVPractical/blob/main/SiT/sample_ddp.py) from the **SiT** repository.
 
+### 6. 🧪 Sampling
+ 
+The image sampling process follows the implementation in [`sample_ddp.py`](https://github.com/77Han329/CVPractical/blob/main/SiT/sample_ddp.py) from the **SiT** repository, with minor modifications tailored to our experimental needs.
+
+Standard Sampling
+```bash
+#To generate 50,000 samples using both ODE and SDE solvers with a CFG scale of 1.5:
+torchrun --nnodes=1 --nproc_per_node=N sample_ddp.py SDE \
+        --model "SiT-XL/2" \
+        --num-fid-samples 50000 \
+        --cfg-scale 1.5 \
+        --sample-dir "your_sample_directory"/
+
+torchrun --nnodes=1 --nproc_per_node=N sample_ddp.py SDE \
+        --model "SiT-XL/2" \
+        --num-fid-samples 50000 \
+        --cfg-scale 1.5 \
+        --sample-dir "your_sample_directory"/
+```
+Sampling with Different SDE Forms and Norms
+```bash
+#To test different combinations of SDE formulation and normalization parameters (e.g., sigma, 1.0), with 1,000 samples at CFG scale 1.5:
+torchrun --nnodes=1 --nproc_per_node=$NPROC sample_ddp.py SDE \
+            --model "SiT-XL/2" \
+            --num-fid-samples 1000 \
+            --cfg-scale 1.5 \
+            --diffusion-form sigma \
+            --diffusion-norm 1.0 \
+            --sample-dir "your_sample_directory"
+```
+
+Sampling with Different CFG Intervals
+```bash
+#To explore the effect of different CFG intervals on image quality or diversity:
+torchrun --nnodes=1 --nproc_per_node=1 sample_ddp.py ODE \
+        --model "SiT-XL/2" \
+        --num-fid-samples 1000 \
+        --cfg-scale 1.5 \
+        --sample-dir "your_sample_directory"
+```bash
 
 ---
 
