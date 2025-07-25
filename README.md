@@ -1,5 +1,5 @@
 ## Master Practical of Image and Video Synthesis  <br><sub>**Research of Diversity of SiT**</sub>
-[Our Report Paper](https://arxiv.org/pdf/2401.08740.pdf)
+[Our Report Paper](https://github.com/77Han329/CVPractical/blob/main/diversity_image_generation.pdf)
 
 ![SiT samples](examples/odevssde—cfg/ode_sde_cfg.png)
 
