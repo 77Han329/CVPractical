@@ -121,7 +121,7 @@ torchrun --nnodes=1 --nproc_per_node=N sample_ddp.py SDE \
 Sampling with Different SDE Forms and Norms
 ```bash
 #To test different combinations of SDE formulation and normalization parameters (e.g., sigma, 1.0), with 1,000 samples at CFG scale 1.5:
-torchrun --nnodes=1 --nproc_per_node=$NPROC sample_ddp.py SDE \
+torchrun --nnodes=1 --nproc_per_node=N sample_ddp.py SDE \
             --model "SiT-XL/2" \
             --num-fid-samples 1000 \
             --cfg-scale 1.5 \
@@ -133,7 +133,7 @@ torchrun --nnodes=1 --nproc_per_node=$NPROC sample_ddp.py SDE \
 Sampling with Different CFG Intervals
 ```bash
 #To explore the effect of different CFG intervals on image quality or diversity:
-torchrun --nnodes=1 --nproc_per_node=1 sample_ddp.py ODE \
+torchrun --nnodes=1 --nproc_per_node=N sample_ddp.py ODE \
         --model "SiT-XL/2" \
         --num-fid-samples 1000 \
         --cfg-scale 1.5 \
