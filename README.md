@@ -200,7 +200,7 @@ Contains ablation studies on diversity-quality trade-offs, including various sam
 
 <details>
 <summary><strong>📊 Metric Correlation Heatmap</strong></summary>
-
+！Note the Result of FID is unconvert
 ![Metric Correlation](exp-final/metric_correlation_heatmap.png)  
 This heatmap shows the correlation between metrics such as FID, LPIPS, DreamSim, and CLIP.
 
